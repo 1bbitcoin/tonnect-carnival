@@ -5,36 +5,69 @@ import { toast } from "sonner";
 import miningIcon from "@/assets/mining-icon.jpeg";
 
 const Mining = () => {
+  const tokensPerHour = 10;
+  const maxTokens = 40; // 4 hours * 10 tokens
+  const totalSeconds = 14400; // 4 hours in seconds
+
   const [miningAmount, setMiningAmount] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(14400); // 4 hours in seconds
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
   const [canClaim, setCanClaim] = useState(false);
   const [isMining, setIsMining] = useState(true);
 
-  const tokensPerHour = 10;
-  const maxTokens = 40; // 4 hours * 10 tokens
-
+  // Load mining state from localStorage on mount
   useEffect(() => {
-    const miningInterval = setInterval(() => {
-      if (isMining && miningAmount < maxTokens) {
-        setMiningAmount((prev) => Math.min(prev + tokensPerHour / 3600, maxTokens));
+    const savedState = localStorage.getItem('miningState');
+    if (savedState) {
+      const { startTime, lastClaimTime, totalMined } = JSON.parse(savedState);
+      const now = Date.now();
+      const elapsed = (now - startTime) / 1000; // seconds
+      
+      if (elapsed >= totalSeconds) {
+        // Ready to claim
+        setMiningAmount(maxTokens);
+        setTimeLeft(0);
+        setCanClaim(true);
+      } else {
+        // Still mining
+        const earnedAmount = Math.min((elapsed / 3600) * tokensPerHour, maxTokens);
+        setMiningAmount(earnedAmount);
+        setTimeLeft(Math.max(0, totalSeconds - Math.floor(elapsed)));
+        setCanClaim(false);
+      }
+    } else {
+      // First time mining - initialize state
+      const now = Date.now();
+      localStorage.setItem('miningState', JSON.stringify({
+        startTime: now,
+        lastClaimTime: 0,
+        totalMined: 0
+      }));
+    }
+  }, []);
+
+  // Update mining progress every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const savedState = localStorage.getItem('miningState');
+      if (!savedState) return;
+
+      const { startTime } = JSON.parse(savedState);
+      const now = Date.now();
+      const elapsed = (now - startTime) / 1000;
+
+      if (elapsed >= totalSeconds) {
+        setMiningAmount(maxTokens);
+        setTimeLeft(0);
+        setCanClaim(true);
+      } else {
+        const earnedAmount = Math.min((elapsed / 3600) * tokensPerHour, maxTokens);
+        setMiningAmount(earnedAmount);
+        setTimeLeft(Math.max(0, totalSeconds - Math.floor(elapsed)));
       }
     }, 1000);
 
-    const timerInterval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setCanClaim(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(miningInterval);
-      clearInterval(timerInterval);
-    };
-  }, [isMining, miningAmount]);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -46,9 +79,25 @@ const Mining = () => {
   };
 
   const handleClaim = () => {
+    const savedState = localStorage.getItem('miningState');
+    let totalMined = 0;
+    
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      totalMined = (state.totalMined || 0) + miningAmount;
+    }
+    
+    // Reset mining cycle
+    const now = Date.now();
+    localStorage.setItem('miningState', JSON.stringify({
+      startTime: now,
+      lastClaimTime: now,
+      totalMined: totalMined
+    }));
+    
     toast.success(`Claimed ${miningAmount.toFixed(2)} TONNECT!`);
     setMiningAmount(0);
-    setTimeLeft(14400);
+    setTimeLeft(totalSeconds);
     setCanClaim(false);
   };
 
@@ -120,7 +169,16 @@ const Mining = () => {
             <Zap className="w-5 h-5 text-accent" />
             <p className="text-sm text-muted-foreground">Total Mined</p>
           </div>
-          <p className="text-2xl font-bold">0</p>
+          <p className="text-2xl font-bold">
+            {(() => {
+              const savedState = localStorage.getItem('miningState');
+              if (savedState) {
+                const { totalMined } = JSON.parse(savedState);
+                return (totalMined || 0).toFixed(2);
+              }
+              return "0";
+            })()}
+          </p>
           <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
       </div>

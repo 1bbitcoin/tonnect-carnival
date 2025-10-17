@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Zap, Clock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import miningIcon from "@/assets/mining-icon.jpeg";
 
 const Mining = () => {
   const [miningAmount, setMiningAmount] = useState(0);
@@ -67,7 +68,13 @@ const Mining = () => {
         <div className="text-center">
           <div className="relative inline-block">
             <div className="absolute inset-0 animate-glow-pulse rounded-full" />
-            <Zap className="w-24 h-24 text-primary relative animate-float" />
+            <div className="relative w-24 h-24 animate-float">
+              <img 
+                src={miningIcon} 
+                alt="Mining" 
+                className="w-full h-full rounded-full object-cover shadow-[0_0_30px_rgba(0,212,255,0.6)]"
+              />
+            </div>
           </div>
         </div>
 

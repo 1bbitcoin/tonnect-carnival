@@ -107,14 +107,14 @@ const Dashboard = () => {
           href="/mining"
           className="cyber-card rounded-xl p-4 text-center hover:scale-105 transition-transform"
         >
-          <Zap className="w-8 h-8 mx-auto mb-2 text-primary animate-glow-pulse" />
+          <div className="text-5xl mb-2 animate-float">⛏️</div>
           <p className="font-bold">Start Mining</p>
         </a>
         <a
           href="/spin"
           className="cyber-card rounded-xl p-4 text-center hover:scale-105 transition-transform"
         >
-          <Gift className="w-8 h-8 mx-auto mb-2 text-secondary animate-spin-slow" />
+          <div className="text-5xl mb-2 animate-float">🎰</div>
           <p className="font-bold">Spin Now</p>
         </a>
       </div>

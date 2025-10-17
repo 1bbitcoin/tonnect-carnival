@@ -99,7 +99,7 @@ const Spin = () => {
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total Won</p>
-            <p className="text-2xl font-bold text-accent">350</p>
+            <p className="text-2xl font-bold text-accent">0</p>
           </div>
         </div>
       </div>

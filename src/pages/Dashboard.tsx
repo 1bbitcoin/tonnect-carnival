@@ -4,8 +4,8 @@ import tonnectLogo from "@/assets/tonnect-logo.jpeg";
 
 const Dashboard = () => {
   const [totalSupply] = useState(1000000000); // 1 Billion
-  const [claimedTokens, setClaimedTokens] = useState(156789234);
-  const [userBalance] = useState(4250);
+  const [claimedTokens, setClaimedTokens] = useState(0);
+  const [userBalance] = useState(0);
 
   const remainingSupply = totalSupply - claimedTokens;
   const claimedPercentage = ((claimedTokens / totalSupply) * 100).toFixed(2);
@@ -87,15 +87,15 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-3 gap-2 text-center pt-4 border-t border-primary/20">
           <div>
-            <p className="text-2xl font-bold text-primary">+150</p>
+            <p className="text-2xl font-bold text-primary">+0</p>
             <p className="text-xs text-muted-foreground">Today</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-secondary">+1,050</p>
+            <p className="text-2xl font-bold text-secondary">+0</p>
             <p className="text-xs text-muted-foreground">This Week</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-accent">23rd</p>
+            <p className="text-2xl font-bold text-accent">-</p>
             <p className="text-xs text-muted-foreground">Rank</p>
           </div>
         </div>

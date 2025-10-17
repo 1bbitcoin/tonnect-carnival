@@ -66,13 +66,12 @@ const Mining = () => {
       {/* Mining Status Card */}
       <div className="cyber-card rounded-2xl p-8 space-y-6">
         <div className="text-center">
-          <div className="relative inline-block">
-            <div className="absolute inset-0 animate-glow-pulse rounded-full" />
-            <div className="relative w-24 h-24 animate-float">
+          <div className="relative inline-block animate-float">
+            <div className="w-24 h-24 rounded-full overflow-hidden shadow-[0_0_30px_rgba(0,212,255,0.6)] ring-2 ring-primary/50">
               <img 
                 src={miningIcon} 
                 alt="Mining" 
-                className="w-full h-full rounded-full object-cover shadow-[0_0_30px_rgba(0,212,255,0.6)]"
+                className="w-full h-full object-cover"
               />
             </div>
           </div>
@@ -121,7 +120,7 @@ const Mining = () => {
             <Zap className="w-5 h-5 text-accent" />
             <p className="text-sm text-muted-foreground">Total Mined</p>
           </div>
-          <p className="text-2xl font-bold">4,250</p>
+          <p className="text-2xl font-bold">0</p>
           <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
       </div>

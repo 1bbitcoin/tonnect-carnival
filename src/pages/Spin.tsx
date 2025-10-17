@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Gift, Sparkles, Coins, Fish, Zap } from "lucide-react";
+import { Gift, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import tonnectIcon from "@/assets/tonnect-icon.jpeg";
 
 const Spin = () => {
   const [isSpinning, setIsSpinning] = useState(false);
@@ -10,14 +11,14 @@ const Spin = () => {
   const [timeLeft, setTimeLeft] = useState("");
 
   const prizes = [
-    { id: 0, value: 10, label: "TONNECT 10", icon: Coins, multiplier: "x1" },
-    { id: 1, value: 25, label: "TONNECT 25", icon: Coins, multiplier: "x2" },
-    { id: 2, value: 50, label: "TONNECT 50", icon: Coins, multiplier: "x5" },
-    { id: 3, value: 100, label: "FISH 100", icon: Fish, multiplier: "x10" },
-    { id: 4, value: 75, label: "TONNECT 75", icon: Zap, multiplier: "x7" },
-    { id: 5, value: 150, label: "TONNECT 150", icon: Coins, multiplier: "x15" },
-    { id: 6, value: 200, label: "TONNECT 200", icon: Sparkles, multiplier: "x20" },
-    { id: 7, value: 500, label: "TONNECT 500", icon: Gift, multiplier: "x50" },
+    { id: 0, value: 10, label: "TONNECT 10" },
+    { id: 1, value: 25, label: "TONNECT 25" },
+    { id: 2, value: 50, label: "TONNECT 50" },
+    { id: 3, value: 15, label: "TONNECT 15" },
+    { id: 4, value: 75, label: "TONNECT 75" },
+    { id: 5, value: 30, label: "TONNECT 30" },
+    { id: 6, value: 60, label: "TONNECT 60" },
+    { id: 7, value: 100, label: "TONNECT 100" },
   ];
 
   useEffect(() => {
@@ -107,7 +108,6 @@ const Spin = () => {
       <div className="cyber-card rounded-2xl p-6">
         <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
           {prizes.map((prize, index) => {
-            const Icon = prize.icon;
             const isSelected = selectedPrize === index;
             const isWinner = !isSpinning && selectedPrize === index;
             
@@ -124,19 +124,18 @@ const Spin = () => {
                     : ""
                 } border-2 border-primary/20 hover:border-primary/40`}
               >
-                {/* Multiplier Badge */}
-                <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
-                  {prize.multiplier}
-                </div>
-
-                {/* Icon */}
-                <div className="flex justify-center mb-2">
-                  <div className={`rounded-full p-3 ${
+                {/* Logo */}
+                <div className="flex justify-center mb-3">
+                  <div className={`rounded-full overflow-hidden w-16 h-16 ${
                     isSelected 
-                      ? "bg-gradient-to-br from-primary to-secondary" 
-                      : "bg-gradient-to-br from-primary/80 to-secondary/80"
-                  } shadow-lg`}>
-                    <Icon className="w-8 h-8 text-white" />
+                      ? "ring-4 ring-primary shadow-[0_0_20px_rgba(0,212,255,0.6)]" 
+                      : "ring-2 ring-primary/40"
+                  }`}>
+                    <img 
+                      src={tonnectIcon} 
+                      alt="TONNECT" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
 
@@ -173,7 +172,7 @@ const Spin = () => {
           How It Works
         </h3>
         <p className="text-sm text-muted-foreground">
-          Draw once every 24 hours to win TONNECT tokens! Prizes range from 10 to 500 TONNECT.
+          Draw once every 24 hours to win TONNECT tokens! Prizes range from 10 to 100 TONNECT.
         </p>
       </div>
     </div>

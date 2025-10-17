@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
-import { Coins, TrendingUp, Zap, Gift } from "lucide-react";
+import { Coins, TrendingUp } from "lucide-react";
 import tonnectLogo from "@/assets/tonnect-logo.jpeg";
+import { getBalance } from "@/lib/balance";
 
 const Dashboard = () => {
   const [totalSupply] = useState(1000000000); // 1 Billion
   const [claimedTokens, setClaimedTokens] = useState(0);
-  const [userBalance] = useState(0);
+  const [userBalance, setUserBalance] = useState(0);
+
+  useEffect(() => {
+    setUserBalance(getBalance());
+    
+    // Update balance every second to reflect changes
+    const balanceInterval = setInterval(() => {
+      setUserBalance(getBalance());
+    }, 1000);
+
+    return () => clearInterval(balanceInterval);
+  }, []);
 
   const remainingSupply = totalSupply - claimedTokens;
   const claimedPercentage = ((claimedTokens / totalSupply) * 100).toFixed(2);

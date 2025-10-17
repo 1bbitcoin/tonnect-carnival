@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { User, Wallet, Settings, LogOut, Shield, Bell } from "lucide-react";
 import { toast } from "sonner";
 import tonnectLogo from "@/assets/tonnect-logo.jpeg";
+import { getBalance } from "@/lib/balance";
 
 const Profile = () => {
   const user = {
@@ -88,8 +89,8 @@ const Profile = () => {
       {/* Account Stats */}
       <div className="grid grid-cols-2 gap-4">
         <div className="cyber-card rounded-xl p-4">
-          <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
-          <p className="text-2xl font-bold text-primary">0</p>
+          <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
+          <p className="text-2xl font-bold text-primary">{getBalance().toFixed(2)}</p>
           <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
 

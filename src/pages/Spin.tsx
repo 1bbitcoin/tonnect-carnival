@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Gift, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import tonnectIcon from "@/assets/tonnect-icon.jpeg";
+import { addBalance, addSpinWin, getBalance, getTotalSpinWon } from "@/lib/balance";
 
 const Spin = () => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedPrize, setSelectedPrize] = useState<number | null>(null);
   const [canSpin, setCanSpin] = useState(true);
   const [timeLeft, setTimeLeft] = useState("");
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [totalWon, setTotalWon] = useState(0);
 
   const prizes = [
     { id: 0, value: 10, label: "TONNECT 10" },
@@ -22,6 +25,8 @@ const Spin = () => {
   ];
 
   useEffect(() => {
+    setCurrentBalance(getBalance());
+    setTotalWon(getTotalSpinWon());
     checkSpinAvailability();
     const interval = setInterval(checkSpinAvailability, 1000);
     return () => clearInterval(interval);
@@ -74,8 +79,14 @@ const Spin = () => {
       setSelectedPrize(winnerIndex);
       setIsSpinning(false);
       
+      // Add to balance and total won
+      const newBalance = addBalance(winner.value);
+      const newTotalWon = addSpinWin(winner.value);
+      
       localStorage.setItem("lastSpinTime", new Date().toISOString());
       setCanSpin(false);
+      setCurrentBalance(newBalance);
+      setTotalWon(newTotalWon);
       
       toast.success(`You won ${winner.value} TONNECT! 🎉`);
     }, 3000);
@@ -92,14 +103,18 @@ const Spin = () => {
       <div className="cyber-card rounded-2xl p-4">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm text-muted-foreground">Next Draw Available</p>
-            <p className="text-xl font-bold text-primary">
+            <p className="text-sm text-muted-foreground">Balance</p>
+            <p className="text-2xl font-bold text-primary">{currentBalance.toFixed(2)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Next Draw</p>
+            <p className="text-lg font-bold text-accent">
               {canSpin ? "Now!" : timeLeft}
             </p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total Won</p>
-            <p className="text-2xl font-bold text-accent">0</p>
+            <p className="text-2xl font-bold text-secondary">{totalWon.toFixed(2)}</p>
           </div>
         </div>
       </div>

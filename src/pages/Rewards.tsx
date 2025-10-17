@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Gift, Lock, Calendar, Coins } from "lucide-react";
 import { toast } from "sonner";
+import { getBalance } from "@/lib/balance";
 
 const Rewards = () => {
-  const userBalance = 0;
+  const userBalance = getBalance();
   const tgeDate = "Coming Soon";
   const minWithdrawal = 100;
 

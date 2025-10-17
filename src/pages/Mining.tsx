@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Zap, Clock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import miningIcon from "@/assets/mining-icon.jpeg";
+import { addBalance, getBalance, getTotalMined } from "@/lib/balance";
 
 const Mining = () => {
   const tokensPerHour = 10;
@@ -13,9 +14,14 @@ const Mining = () => {
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
   const [canClaim, setCanClaim] = useState(false);
   const [isMining, setIsMining] = useState(true);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [totalMined, setTotalMined] = useState(0);
 
   // Load mining state from localStorage on mount
   useEffect(() => {
+    setCurrentBalance(getBalance());
+    setTotalMined(getTotalMined());
+    
     const savedState = localStorage.getItem('miningState');
     if (savedState) {
       const { startTime, lastClaimTime, totalMined } = JSON.parse(savedState);
@@ -80,25 +86,32 @@ const Mining = () => {
 
   const handleClaim = () => {
     const savedState = localStorage.getItem('miningState');
-    let totalMined = 0;
+    let newTotalMined = 0;
     
     if (savedState) {
       const state = JSON.parse(savedState);
-      totalMined = (state.totalMined || 0) + miningAmount;
+      newTotalMined = (state.totalMined || 0) + miningAmount;
+    } else {
+      newTotalMined = miningAmount;
     }
+    
+    // Add to balance
+    const newBalance = addBalance(miningAmount);
     
     // Reset mining cycle
     const now = Date.now();
     localStorage.setItem('miningState', JSON.stringify({
       startTime: now,
       lastClaimTime: now,
-      totalMined: totalMined
+      totalMined: newTotalMined
     }));
     
     toast.success(`Claimed ${miningAmount.toFixed(2)} TONNECT!`);
     setMiningAmount(0);
     setTimeLeft(totalSeconds);
     setCanClaim(false);
+    setCurrentBalance(newBalance);
+    setTotalMined(newTotalMined);
   };
 
   const handleBoost = () => {
@@ -158,10 +171,10 @@ const Mining = () => {
         <div className="cyber-card rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <p className="text-sm text-muted-foreground">Rate</p>
+            <p className="text-sm text-muted-foreground">Balance</p>
           </div>
-          <p className="text-2xl font-bold">{tokensPerHour}</p>
-          <p className="text-xs text-muted-foreground">TONNECT/hour</p>
+          <p className="text-2xl font-bold text-primary">{currentBalance.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
 
         <div className="cyber-card rounded-xl p-4">
@@ -169,16 +182,7 @@ const Mining = () => {
             <Zap className="w-5 h-5 text-accent" />
             <p className="text-sm text-muted-foreground">Total Mined</p>
           </div>
-          <p className="text-2xl font-bold">
-            {(() => {
-              const savedState = localStorage.getItem('miningState');
-              if (savedState) {
-                const { totalMined } = JSON.parse(savedState);
-                return (totalMined || 0).toFixed(2);
-              }
-              return "0";
-            })()}
-          </p>
+          <p className="text-2xl font-bold">{totalMined.toFixed(2)}</p>
           <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
       </div>

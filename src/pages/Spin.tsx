@@ -99,15 +99,17 @@ const Spin = () => {
               {/* Prize Labels */}
               {prizes.map((prize, index) => {
                 const angle = (360 / prizes.length) * index;
+                const segmentAngle = 360 / prizes.length;
+                const centerAngle = angle + segmentAngle / 2;
                 return (
                   <div
                     key={index}
-                    className="absolute top-1/2 left-1/2 origin-left"
+                    className="absolute top-1/2 left-1/2"
                     style={{
-                      transform: `rotate(${angle + 22.5}deg) translateX(75px)`,
+                      transform: `rotate(${centerAngle}deg) translate(85px) rotate(-${centerAngle}deg)`,
                     }}
                   >
-                    <div className="text-white font-bold text-xl -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                    <div className="text-white font-bold text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] -translate-x-1/2 -translate-y-1/2">
                       {prize}
                     </div>
                   </div>

@@ -8,18 +8,13 @@ const Referral = () => {
   const referralLink = `https://tonnect.app/ref/${referralCode}`;
   
   const stats = {
-    totalReferrals: 12,
-    activeReferrals: 8,
-    totalEarned: 1560,
-    pendingRewards: 45,
+    totalReferrals: 0,
+    activeReferrals: 0,
+    totalEarned: 0,
+    pendingRewards: 0,
   };
 
-  const recentReferrals = [
-    { username: "User#4521", earned: 125, status: "Active" },
-    { username: "User#8932", earned: 98, status: "Active" },
-    { username: "User#1203", earned: 156, status: "Active" },
-    { username: "User#7654", earned: 67, status: "Inactive" },
-  ];
+  const recentReferrals: { username: string; earned: number; status: string }[] = [];
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
@@ -128,28 +123,38 @@ const Referral = () => {
       <div className="cyber-card rounded-2xl p-6 space-y-4">
         <h2 className="text-lg font-bold">Recent Referrals</h2>
         
-        <div className="space-y-2">
-          {recentReferrals.map((ref, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-            >
-              <div>
-                <p className="font-semibold">{ref.username}</p>
-                <p className="text-xs text-muted-foreground">+{ref.earned} TONNECT earned</p>
-              </div>
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${
-                  ref.status === "Active"
-                    ? "bg-primary/20 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
+        {recentReferrals.length > 0 ? (
+          <div className="space-y-2">
+            {recentReferrals.map((ref, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
               >
-                {ref.status}
-              </span>
-            </div>
-          ))}
-        </div>
+                <div>
+                  <p className="font-semibold">{ref.username}</p>
+                  <p className="text-xs text-muted-foreground">+{ref.earned} TONNECT earned</p>
+                </div>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    ref.status === "Active"
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {ref.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-5xl mb-3 opacity-50">👥</div>
+            <p className="text-muted-foreground">No referrals yet</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Share your referral link to start earning!
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

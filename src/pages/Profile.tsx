@@ -89,13 +89,13 @@ const Profile = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="cyber-card rounded-xl p-4">
           <p className="text-sm text-muted-foreground mb-1">Total Earned</p>
-          <p className="text-2xl font-bold text-primary">4,250</p>
+          <p className="text-2xl font-bold text-primary">0</p>
           <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
 
         <div className="cyber-card rounded-xl p-4">
           <p className="text-sm text-muted-foreground mb-1">Referrals</p>
-          <p className="text-2xl font-bold text-accent">12</p>
+          <p className="text-2xl font-bold text-accent">0</p>
           <p className="text-xs text-muted-foreground">Active users</p>
         </div>
       </div>

@@ -118,6 +118,13 @@ const Dashboard = () => {
           <p className="font-bold">Spin Now</p>
         </a>
       </div>
+
+      {/* Task Coming Soon */}
+      <div className="cyber-card rounded-xl p-6 text-center opacity-75">
+        <div className="text-6xl mb-3 animate-float">📋</div>
+        <p className="font-bold text-xl mb-2">Tasks</p>
+        <p className="text-sm text-muted-foreground">Coming Soon</p>
+      </div>
     </div>
   );
 };

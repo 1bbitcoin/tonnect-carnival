@@ -4,7 +4,7 @@ import tonnectLogo from "@/assets/tonnect-logo.jpeg";
 import { getBalance } from "@/lib/balance";
 
 const Dashboard = () => {
-  const [totalSupply] = useState(1000000000); // 1 Billion
+  const [totalSupply] = useState(10000000000); // 10 Billion
   const [claimedTokens, setClaimedTokens] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
 
@@ -131,11 +131,20 @@ const Dashboard = () => {
         </a>
       </div>
 
-      {/* Task Coming Soon */}
-      <div className="cyber-card rounded-xl p-6 text-center opacity-75">
-        <div className="text-6xl mb-3 animate-float">📋</div>
-        <p className="font-bold text-xl mb-2">Tasks</p>
-        <p className="text-sm text-muted-foreground">Coming Soon</p>
+      {/* Tasks and Store */}
+      <div className="grid grid-cols-2 gap-4">
+        <a
+          href="/tasks"
+          className="cyber-card rounded-xl p-4 text-center hover:scale-105 transition-transform"
+        >
+          <div className="text-5xl mb-2 animate-float">📋</div>
+          <p className="font-bold">Tasks</p>
+        </a>
+        <div className="cyber-card rounded-xl p-4 text-center opacity-75">
+          <div className="text-5xl mb-2 animate-float">🏪</div>
+          <p className="font-bold">Store</p>
+          <p className="text-xs text-muted-foreground mt-1">Coming Soon</p>
+        </div>
       </div>
     </div>
   );

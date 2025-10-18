@@ -7,6 +7,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Mining from "./pages/Mining";
 import Spin from "./pages/Spin";
+import Tasks from "./pages/Tasks";
 import Referral from "./pages/Referral";
 import Rewards from "./pages/Rewards";
 import Leaderboard from "./pages/Leaderboard";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/mining" element={<Mining />} />
             <Route path="/spin" element={<Spin />} />
+            <Route path="/tasks" element={<Tasks />} />
             <Route path="/referral" element={<Referral />} />
             <Route path="/rewards" element={<Rewards />} />
             <Route path="/leaderboard" element={<Leaderboard />} />

@@ -8,7 +8,18 @@ export const addBalance = (amount: number): number => {
   const currentBalance = getBalance();
   const newBalance = currentBalance + amount;
   localStorage.setItem('tonnect_balance', newBalance.toString());
+  
+  // Track total claimed tokens for supply calculation
+  const currentClaimed = getTotalClaimed();
+  const newClaimed = currentClaimed + amount;
+  localStorage.setItem('total_claimed', newClaimed.toString());
+  
   return newBalance;
+};
+
+export const getTotalClaimed = (): number => {
+  const claimed = localStorage.getItem('total_claimed');
+  return claimed ? parseFloat(claimed) : 0;
 };
 
 export const getTotalMined = (): number => {

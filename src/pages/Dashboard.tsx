@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Coins, TrendingUp } from "lucide-react";
 import tonnectLogo from "@/assets/tonnect-logo.jpeg";
-import { getBalance } from "@/lib/balance";
+import { getBalance, getTotalClaimed } from "@/lib/balance";
 
 const Dashboard = () => {
   const [totalSupply] = useState(10000000000); // 10 Billion
@@ -10,10 +10,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     setUserBalance(getBalance());
+    setClaimedTokens(getTotalClaimed());
     
-    // Update balance every second to reflect changes
+    // Update balance and claimed tokens every second to reflect changes
     const balanceInterval = setInterval(() => {
       setUserBalance(getBalance());
+      setClaimedTokens(getTotalClaimed());
     }, 1000);
 
     return () => clearInterval(balanceInterval);
@@ -21,14 +23,6 @@ const Dashboard = () => {
 
   const remainingSupply = totalSupply - claimedTokens;
   const claimedPercentage = ((claimedTokens / totalSupply) * 100).toFixed(2);
-
-  useEffect(() => {
-    // Simulate real-time claiming by other users
-    const interval = setInterval(() => {
-      setClaimedTokens((prev) => prev + Math.floor(Math.random() * 100));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="space-y-6">

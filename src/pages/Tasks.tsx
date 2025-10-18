@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, CheckCircle2, Lock } from "lucide-react";
+import { Users, CheckCircle2, Lock, Youtube, Twitter, Wallet, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addBalance, getBalance } from "@/lib/balance";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +9,15 @@ interface Task {
   friends: number;
   reward: number;
   completed: boolean;
+}
+
+interface ActionTask {
+  id: string;
+  title: string;
+  reward: number;
+  completed: boolean;
+  icon: React.ReactNode;
+  action?: string;
 }
 
 const Tasks = () => {
@@ -25,6 +34,17 @@ const Tasks = () => {
     { id: "task_10000", friends: 10000, reward: 150000, completed: false },
   ]);
 
+  const [hotTasks, setHotTasks] = useState<ActionTask[]>([
+    { id: "hot_youtube", title: "Subscribe Channel", reward: 50, completed: false, icon: <Youtube className="w-5 h-5" />, action: "Subscribe" },
+    { id: "hot_twitter", title: "Follow X", reward: 50, completed: false, icon: <Twitter className="w-5 h-5" />, action: "Follow" },
+    { id: "hot_retweet", title: "Like & RT Post", reward: 50, completed: false, icon: <Twitter className="w-5 h-5" />, action: "Complete" },
+  ]);
+
+  const [onchainTasks, setOnchainTasks] = useState<ActionTask[]>([
+    { id: "onchain_wallet", title: "Connect TON Wallet", reward: 100, completed: false, icon: <Wallet className="w-5 h-5" />, action: "Connect" },
+    { id: "onchain_email", title: "Bind Email", reward: 100, completed: false, icon: <Mail className="w-5 h-5" />, action: "Bind" },
+  ]);
+
   useEffect(() => {
     // Load current balance
     setCurrentBalance(getBalance());
@@ -32,6 +52,8 @@ const Tasks = () => {
     // Load saved tasks and referral count from localStorage
     const savedTasks = localStorage.getItem("tasks_completed");
     const savedReferrals = localStorage.getItem("referral_count");
+    const savedHotTasks = localStorage.getItem("hot_tasks_completed");
+    const savedOnchainTasks = localStorage.getItem("onchain_tasks_completed");
     
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks));
@@ -39,6 +61,14 @@ const Tasks = () => {
     
     if (savedReferrals) {
       setReferralCount(parseInt(savedReferrals));
+    }
+
+    if (savedHotTasks) {
+      setHotTasks(JSON.parse(savedHotTasks));
+    }
+
+    if (savedOnchainTasks) {
+      setOnchainTasks(JSON.parse(savedOnchainTasks));
     }
   }, []);
 
@@ -63,6 +93,34 @@ const Tasks = () => {
         description: `+${task.reward.toLocaleString()} TONNECT added to your balance`,
       });
     }
+  };
+
+  const claimActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
+    const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
+    const task = taskList.find(t => t.id === taskId);
+    if (!task || task.completed) return;
+
+    // Add reward to balance
+    const newBalance = addBalance(task.reward);
+    setCurrentBalance(newBalance);
+
+    // Mark task as completed
+    const updatedTasks = taskList.map(t =>
+      t.id === taskId ? { ...t, completed: true } : t
+    );
+    
+    if (taskType === 'hot') {
+      setHotTasks(updatedTasks);
+      localStorage.setItem("hot_tasks_completed", JSON.stringify(updatedTasks));
+    } else {
+      setOnchainTasks(updatedTasks);
+      localStorage.setItem("onchain_tasks_completed", JSON.stringify(updatedTasks));
+    }
+
+    toast({
+      title: "Reward Claimed!",
+      description: `+${task.reward.toLocaleString()} TONNECT added to your balance`,
+    });
   };
 
   return (
@@ -92,7 +150,89 @@ const Tasks = () => {
         </div>
       </div>
 
-      {/* Tasks List */}
+      {/* Hot Tasks */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-accent" />
+          Hot Tasks
+        </h3>
+        
+        {hotTasks.map((task) => (
+          <div
+            key={task.id}
+            className={`cyber-card rounded-xl p-4 ${
+              task.completed ? "opacity-60" : ""
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  {task.completed ? (
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                  ) : (
+                    <span className="text-accent">{task.icon}</span>
+                  )}
+                  <h4 className="font-bold">{task.title}</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Reward: <span className="text-primary font-bold">+{task.reward.toLocaleString()} TONNECT</span>
+                </p>
+              </div>
+              
+              <Button
+                onClick={() => claimActionTask(task.id, 'hot')}
+                disabled={task.completed}
+                className={task.completed ? "bg-primary/20" : "bg-primary hover:bg-primary/90"}
+              >
+                {task.completed ? "Claimed" : task.action}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Onchain Tasks */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-primary" />
+          Onchain Tasks
+        </h3>
+        
+        {onchainTasks.map((task) => (
+          <div
+            key={task.id}
+            className={`cyber-card rounded-xl p-4 ${
+              task.completed ? "opacity-60" : ""
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  {task.completed ? (
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                  ) : (
+                    <span className="text-primary">{task.icon}</span>
+                  )}
+                  <h4 className="font-bold">{task.title}</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Reward: <span className="text-primary font-bold">+{task.reward.toLocaleString()} TONNECT</span>
+                </p>
+              </div>
+              
+              <Button
+                onClick={() => claimActionTask(task.id, 'onchain')}
+                disabled={task.completed}
+                className={task.completed ? "bg-primary/20" : "bg-primary hover:bg-primary/90"}
+              >
+                {task.completed ? "Claimed" : task.action}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Friend Invite Tasks */}
       <div className="space-y-3">
         <h3 className="text-lg font-bold flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-primary" />

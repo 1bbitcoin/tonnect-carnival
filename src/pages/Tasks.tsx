@@ -16,8 +16,8 @@ interface ActionTask {
   title: string;
   reward: number;
   completed: boolean;
+  started: boolean;
   icon: React.ReactNode;
-  action?: string;
 }
 
 const Tasks = () => {
@@ -35,14 +35,14 @@ const Tasks = () => {
   ]);
 
   const [hotTasks, setHotTasks] = useState<ActionTask[]>([
-    { id: "hot_youtube", title: "Subscribe Channel", reward: 50, completed: false, icon: <Youtube className="w-5 h-5" />, action: "Subscribe" },
-    { id: "hot_twitter", title: "Follow X", reward: 50, completed: false, icon: <Twitter className="w-5 h-5" />, action: "Follow" },
-    { id: "hot_retweet", title: "Like & RT Post", reward: 50, completed: false, icon: <Twitter className="w-5 h-5" />, action: "Complete" },
+    { id: "hot_youtube", title: "Subscribe Channel", reward: 50, completed: false, started: false, icon: <Youtube className="w-5 h-5" /> },
+    { id: "hot_twitter", title: "Follow X", reward: 50, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
+    { id: "hot_retweet", title: "Like & RT Post", reward: 50, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
   ]);
 
   const [onchainTasks, setOnchainTasks] = useState<ActionTask[]>([
-    { id: "onchain_wallet", title: "Connect TON Wallet", reward: 100, completed: false, icon: <Wallet className="w-5 h-5" />, action: "Connect" },
-    { id: "onchain_email", title: "Bind Email", reward: 100, completed: false, icon: <Mail className="w-5 h-5" />, action: "Bind" },
+    { id: "onchain_wallet", title: "Connect TON Wallet", reward: 100, completed: false, started: false, icon: <Wallet className="w-5 h-5" /> },
+    { id: "onchain_email", title: "Bind Email", reward: 100, completed: false, started: false, icon: <Mail className="w-5 h-5" /> },
   ]);
 
   useEffect(() => {
@@ -95,10 +95,34 @@ const Tasks = () => {
     }
   };
 
+  const startActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
+    const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
+    const task = taskList.find(t => t.id === taskId);
+    if (!task || task.started) return;
+
+    // Mark task as started
+    const updatedTasks = taskList.map(t =>
+      t.id === taskId ? { ...t, started: true } : t
+    );
+    
+    if (taskType === 'hot') {
+      setHotTasks(updatedTasks);
+      localStorage.setItem("hot_tasks_completed", JSON.stringify(updatedTasks));
+    } else {
+      setOnchainTasks(updatedTasks);
+      localStorage.setItem("onchain_tasks_completed", JSON.stringify(updatedTasks));
+    }
+
+    toast({
+      title: "Task Started!",
+      description: "Complete the task and come back to claim your reward",
+    });
+  };
+
   const claimActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
     const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
     const task = taskList.find(t => t.id === taskId);
-    if (!task || task.completed) return;
+    if (!task || task.completed || !task.started) return;
 
     // Add reward to balance
     const newBalance = addBalance(task.reward);
@@ -180,11 +204,11 @@ const Tasks = () => {
               </div>
               
               <Button
-                onClick={() => claimActionTask(task.id, 'hot')}
+                onClick={() => task.started ? claimActionTask(task.id, 'hot') : startActionTask(task.id, 'hot')}
                 disabled={task.completed}
                 className={task.completed ? "bg-primary/20" : "bg-primary hover:bg-primary/90"}
               >
-                {task.completed ? "Claimed" : task.action}
+                {task.completed ? "Claimed" : task.started ? "Claim" : "Start"}
               </Button>
             </div>
           </div>
@@ -221,11 +245,11 @@ const Tasks = () => {
               </div>
               
               <Button
-                onClick={() => claimActionTask(task.id, 'onchain')}
+                onClick={() => task.started ? claimActionTask(task.id, 'onchain') : startActionTask(task.id, 'onchain')}
                 disabled={task.completed}
                 className={task.completed ? "bg-primary/20" : "bg-primary hover:bg-primary/90"}
               >
-                {task.completed ? "Claimed" : task.action}
+                {task.completed ? "Claimed" : task.started ? "Claim" : "Start"}
               </Button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, CheckCircle2, Lock, Youtube, Twitter, Wallet, Mail } from "lucide-react";
+import { Users, CheckCircle2, Lock, Send, Twitter, Wallet, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addBalance, getBalance } from "@/lib/balance";
 import { toast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ const Tasks = () => {
   ]);
 
   const [hotTasks, setHotTasks] = useState<ActionTask[]>([
-    { id: "hot_youtube", title: "Subscribe Channel", reward: 50, completed: false, started: false, icon: <Youtube className="w-5 h-5" /> },
+    { id: "hot_telegram", title: "Subscribe Channel", reward: 50, completed: false, started: false, icon: <Send className="w-5 h-5" /> },
     { id: "hot_twitter", title: "Follow X", reward: 50, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
     { id: "hot_retweet", title: "Like & RT Post", reward: 50, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
   ]);

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import navIcon from "@/assets/nav-icon.png";
+import { Home, Zap, Gift, Users, Trophy, User } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,12 +10,12 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
 
   const navItems = [
-    { path: "/", label: "Home" },
-    { path: "/mining", label: "Mining" },
-    { path: "/spin", label: "Spin" },
-    { path: "/referral", label: "Referral" },
-    { path: "/leaderboard", label: "Leaderboard" },
-    { path: "/profile", label: "Profile" },
+    { path: "/", icon: Home, label: "Home" },
+    { path: "/mining", icon: Zap, label: "Mining" },
+    { path: "/spin", icon: Gift, label: "Spin" },
+    { path: "/referral", icon: Users, label: "Referral" },
+    { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
+    { path: "/profile", icon: User, label: "Profile" },
   ];
 
   return (
@@ -39,10 +39,8 @@ const Layout = ({ children }: LayoutProps) => {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <img 
-                    src={navIcon} 
-                    alt={item.label}
-                    className="w-5 h-5 mb-1 object-contain"
+                  <item.icon
+                    className="w-5 h-5 mb-1"
                   />
                   <span className="text-xs font-medium">{item.label}</span>
                 </Link>

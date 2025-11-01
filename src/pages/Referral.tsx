@@ -1,25 +1,93 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Copy, Gift, TrendingUp } from "lucide-react";
+import { Copy, Users, TrendingUp, Clock, Gift } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { useTelegram } from "@/contexts/TelegramContext";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ReferralData {
+  id: string;
+  created_at: string;
+  referred_profile: {
+    username: string | null;
+    first_name: string | null;
+  };
+}
 
 const Referral = () => {
-  const [referralCode] = useState("TONNECT-XYZ123");
-  const referralLink = `https://tonnect.app/ref/${referralCode}`;
-  
-  const stats = {
-    totalReferrals: 0,
-    activeReferrals: 0,
-    totalEarned: 0,
-    pendingRewards: 0,
+  const { profile, isLoading } = useTelegram();
+  const [referralCount, setReferralCount] = useState(0);
+  const [totalEarned, setTotalEarned] = useState(0);
+  const [recentReferrals, setRecentReferrals] = useState<ReferralData[]>([]);
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchReferralData();
+    }
+  }, [profile]);
+
+  const fetchReferralData = async () => {
+    if (!profile?.id) return;
+
+    // Get referral count and total earned
+    const { data: referrals, count } = await supabase
+      .from('referrals')
+      .select('bonus_awarded, id, created_at, referred_id', { count: 'exact' })
+      .eq('referrer_id', profile.id);
+
+    setReferralCount(count || 0);
+    
+    if (referrals) {
+      const total = referrals.reduce((sum, ref) => sum + (ref.bonus_awarded || 0), 0);
+      setTotalEarned(total);
+    }
+
+    // Get recent referrals with user info
+    const { data: recentData } = await supabase
+      .from('referrals')
+      .select(`
+        id,
+        created_at,
+        referred_id,
+        referred_profile:profiles!referrals_referred_id_fkey (
+          username,
+          first_name
+        )
+      `)
+      .eq('referrer_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (recentData) {
+      setRecentReferrals(recentData as any);
+    }
   };
 
-  const recentReferrals: { username: string; earned: number; status: string }[] = [];
+  const referralLink = profile?.telegram_id 
+    ? `https://t.me/tonnect_app_bot/start?startapp=ref%3D${profile.telegram_id}`
+    : "";
+
+  const stats = [
+    { label: "Total Referrals", value: referralCount.toString(), icon: Users },
+    { label: "Active Users", value: referralCount.toString(), icon: TrendingUp },
+    { label: "Total Earned", value: `${totalEarned}`, icon: TrendingUp },
+    { label: "Pending Rewards", value: "0", icon: Clock },
+  ];
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast.success("Referral link copied!");
+    if (referralLink) {
+      navigator.clipboard.writeText(referralLink);
+      toast.success("Referral link copied!");
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -64,7 +132,7 @@ const Referral = () => {
         
         <div className="flex gap-2">
           <div className="flex-1 p-3 bg-muted rounded-lg border border-primary/30 overflow-hidden">
-            <p className="text-sm truncate text-muted-foreground">{referralLink}</p>
+            <p className="text-sm truncate text-muted-foreground">{referralLink || 'Loading...'}</p>
           </div>
           <Button
             onClick={copyToClipboard}
@@ -75,48 +143,25 @@ const Referral = () => {
         </div>
 
         <div className="text-center p-4 bg-primary/10 rounded-lg border border-primary/30">
-          <p className="text-xs text-muted-foreground mb-1">Your Code</p>
-          <p className="text-2xl font-bold text-primary">{referralCode}</p>
+          <p className="text-xs text-muted-foreground mb-2">Your Referral Code</p>
+          <p className="text-lg font-bold font-mono">{profile?.referral_code || 'Loading...'}</p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="cyber-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="w-5 h-5 text-primary" />
-            <p className="text-sm text-muted-foreground">Total</p>
+        {stats.map((stat, index) => (
+          <div key={index} className="cyber-card rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <stat.icon className="w-5 h-5 text-primary" />
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+            </div>
+            <p className="text-2xl font-bold">{stat.value}</p>
+            <p className="text-xs text-muted-foreground">
+              {stat.label === "Total Earned" || stat.label === "Pending Rewards" ? "TONNECT" : ""}
+            </p>
           </div>
-          <p className="text-2xl font-bold">{stats.totalReferrals}</p>
-          <p className="text-xs text-muted-foreground">Referrals</p>
-        </div>
-
-        <div className="cyber-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5 text-accent" />
-            <p className="text-sm text-muted-foreground">Active</p>
-          </div>
-          <p className="text-2xl font-bold text-accent">{stats.activeReferrals}</p>
-          <p className="text-xs text-muted-foreground">Users</p>
-        </div>
-
-        <div className="cyber-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Gift className="w-5 h-5 text-primary" />
-            <p className="text-sm text-muted-foreground">Earned</p>
-          </div>
-          <p className="text-2xl font-bold text-primary">{stats.totalEarned}</p>
-          <p className="text-xs text-muted-foreground">TONNECT</p>
-        </div>
-
-        <div className="cyber-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5 text-secondary" />
-            <p className="text-sm text-muted-foreground">Pending</p>
-          </div>
-          <p className="text-2xl font-bold text-secondary">{stats.pendingRewards}</p>
-          <p className="text-xs text-muted-foreground">TONNECT</p>
-        </div>
+        ))}
       </div>
 
       {/* Recent Referrals */}
@@ -125,24 +170,27 @@ const Referral = () => {
         
         {recentReferrals.length > 0 ? (
           <div className="space-y-2">
-            {recentReferrals.map((ref, index) => (
+            {recentReferrals.map((referral) => (
               <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                key={referral.id}
+                className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
               >
                 <div>
-                  <p className="font-semibold">{ref.username}</p>
-                  <p className="text-xs text-muted-foreground">+{ref.earned} TONNECT earned</p>
+                  <p className="font-medium">
+                    {(referral.referred_profile as any)?.username || 
+                     (referral.referred_profile as any)?.first_name || 
+                     'Anonymous User'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(referral.created_at).toLocaleDateString()}
+                  </p>
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    ref.status === "Active"
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {ref.status}
-                </span>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-primary">
+                    +100 TONNECT
+                  </p>
+                  <p className="text-xs text-green-400">Claimed</p>
+                </div>
               </div>
             ))}
           </div>

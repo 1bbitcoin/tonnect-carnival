@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Coins, TrendingUp } from "lucide-react";
-import tonnectLogo from "@/assets/tonnect-logo.jpeg";
+import tonnectLogo from "@/assets/new-tonnect-logo.png";
 import { getBalance, getTotalClaimed } from "@/lib/balance";
 
 const Dashboard = () => {

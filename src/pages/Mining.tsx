@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Zap, Clock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import miningIcon from "@/assets/mining-icon.jpeg";
+import miningIcon from "@/assets/new-tonnect-logo.png";
 import { addBalance, getBalance, getTotalMined } from "@/lib/balance";
 
 const Mining = () => {

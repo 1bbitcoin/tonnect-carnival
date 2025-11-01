@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { User, Wallet, Settings, LogOut, Shield, Bell } from "lucide-react";
 import { toast } from "sonner";
-import tonnectLogo from "@/assets/tonnect-logo.jpeg";
+import tonnectLogo from "@/assets/new-tonnect-logo.png";
 import { getBalance } from "@/lib/balance";
 
 const Profile = () => {

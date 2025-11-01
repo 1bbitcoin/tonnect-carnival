@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Gift, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import tonnectIcon from "@/assets/tonnect-icon.jpeg";
+import tonnectIcon from "@/assets/new-tonnect-logo.png";
 import { addBalance, addSpinWin, getBalance, getTotalSpinWon } from "@/lib/balance";
 
 const Spin = () => {

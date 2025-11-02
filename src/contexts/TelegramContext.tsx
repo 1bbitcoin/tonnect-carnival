@@ -8,6 +8,7 @@ interface TelegramUser {
   last_name?: string;
   username?: string;
   language_code?: string;
+  photo_url?: string;
 }
 
 interface Profile {
@@ -19,6 +20,7 @@ interface Profile {
   referral_code: string;
   total_balance: number;
   created_at: string;
+  photo_url?: string | null;
 }
 
 interface TelegramContextType {
@@ -60,7 +62,8 @@ export const TelegramProvider = ({ children }: { children: ReactNode }) => {
           first_name: telegramUser.first_name || null,
           last_name: telegramUser.last_name || null,
           referral_code: referralCode,
-          total_balance: 0
+          total_balance: 0,
+          photo_url: telegramUser.photo_url || null
         })
         .select()
         .single();

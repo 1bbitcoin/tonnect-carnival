@@ -55,11 +55,19 @@ const Profile = () => {
       <div className="cyber-card rounded-2xl p-6 space-y-4">
         <div className="text-center">
           <div className="inline-block relative mb-4">
-            <img
-              src={tonnectLogo}
-              alt="Profile"
-              className="w-24 h-24 rounded-full border-2 border-primary animate-glow-pulse"
-            />
+            {profile?.photo_url ? (
+              <img
+                src={profile.photo_url}
+                alt="Profile"
+                className="w-24 h-24 rounded-full border-2 border-primary animate-glow-pulse object-cover"
+              />
+            ) : (
+              <img
+                src={tonnectLogo}
+                alt="Profile"
+                className="w-24 h-24 rounded-full border-2 border-primary animate-glow-pulse"
+              />
+            )}
             <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-2 border-background" />
           </div>
           

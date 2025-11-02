@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Zap, Clock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import miningIcon from "@/assets/new-tonnect-logo.png";
-import { addBalance, getBalance, getTotalMined } from "@/lib/balance";
+import { useTelegram } from "@/contexts/TelegramContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Mining = () => {
+  const { profile, refetch } = useTelegram();
   const tokensPerHour = 10;
   const maxTokens = 40; // 4 hours * 10 tokens
   const totalSeconds = 14400; // 4 hours in seconds
@@ -13,18 +15,17 @@ const Mining = () => {
   const [miningAmount, setMiningAmount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
   const [canClaim, setCanClaim] = useState(false);
-  const [isMining, setIsMining] = useState(true);
-  const [currentBalance, setCurrentBalance] = useState(0);
   const [totalMined, setTotalMined] = useState(0);
 
   // Load mining state from localStorage on mount
   useEffect(() => {
-    setCurrentBalance(getBalance());
-    setTotalMined(getTotalMined());
+    if (!profile) return;
     
-    const savedState = localStorage.getItem('miningState');
+    const storageKey = `miningState_${profile.telegram_id}`;
+    const savedState = localStorage.getItem(storageKey);
+    
     if (savedState) {
-      const { startTime, lastClaimTime, totalMined } = JSON.parse(savedState);
+      const { startTime } = JSON.parse(savedState);
       const now = Date.now();
       const elapsed = (now - startTime) / 1000; // seconds
       
@@ -43,18 +44,20 @@ const Mining = () => {
     } else {
       // First time mining - initialize state
       const now = Date.now();
-      localStorage.setItem('miningState', JSON.stringify({
+      localStorage.setItem(storageKey, JSON.stringify({
         startTime: now,
         lastClaimTime: 0,
-        totalMined: 0
       }));
     }
-  }, []);
+  }, [profile]);
 
   // Update mining progress every second
   useEffect(() => {
+    if (!profile) return;
+    
+    const storageKey = `miningState_${profile.telegram_id}`;
     const interval = setInterval(() => {
-      const savedState = localStorage.getItem('miningState');
+      const savedState = localStorage.getItem(storageKey);
       if (!savedState) return;
 
       const { startTime } = JSON.parse(savedState);
@@ -73,7 +76,7 @@ const Mining = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [profile]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -84,34 +87,40 @@ const Mining = () => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleClaim = () => {
-    const savedState = localStorage.getItem('miningState');
-    let newTotalMined = 0;
+  const handleClaim = async () => {
+    if (!profile) return;
+
+    const storageKey = `miningState_${profile.telegram_id}`;
     
-    if (savedState) {
-      const state = JSON.parse(savedState);
-      newTotalMined = (state.totalMined || 0) + miningAmount;
-    } else {
-      newTotalMined = miningAmount;
+    try {
+      // Update balance in database
+      const newBalance = Number(profile.total_balance || 0) + miningAmount;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ total_balance: newBalance })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+
+      // Reset mining cycle
+      const now = Date.now();
+      localStorage.setItem(storageKey, JSON.stringify({
+        startTime: now,
+        lastClaimTime: now,
+      }));
+      
+      toast.success(`Claimed ${miningAmount.toFixed(2)} TONNECT!`);
+      setMiningAmount(0);
+      setTimeLeft(totalSeconds);
+      setCanClaim(false);
+      
+      // Refetch profile to update balance
+      await refetch();
+    } catch (error) {
+      console.error('Error claiming tokens:', error);
+      toast.error('Failed to claim tokens');
     }
-    
-    // Add to balance
-    const newBalance = addBalance(miningAmount);
-    
-    // Reset mining cycle
-    const now = Date.now();
-    localStorage.setItem('miningState', JSON.stringify({
-      startTime: now,
-      lastClaimTime: now,
-      totalMined: newTotalMined
-    }));
-    
-    toast.success(`Claimed ${miningAmount.toFixed(2)} TONNECT!`);
-    setMiningAmount(0);
-    setTimeLeft(totalSeconds);
-    setCanClaim(false);
-    setCurrentBalance(newBalance);
-    setTotalMined(newTotalMined);
   };
 
   const handleBoost = () => {
@@ -173,17 +182,17 @@ const Mining = () => {
             <TrendingUp className="w-5 h-5 text-primary" />
             <p className="text-sm text-muted-foreground">Balance</p>
           </div>
-          <p className="text-2xl font-bold text-primary">{currentBalance.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-primary">{Number(profile?.total_balance || 0).toFixed(2)}</p>
           <p className="text-xs text-muted-foreground">TONNECT</p>
         </div>
 
         <div className="cyber-card rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-5 h-5 text-accent" />
-            <p className="text-sm text-muted-foreground">Total Mined</p>
+            <p className="text-sm text-muted-foreground">Mining Rate</p>
           </div>
-          <p className="text-2xl font-bold">{totalMined.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">TONNECT</p>
+          <p className="text-2xl font-bold">{tokensPerHour}</p>
+          <p className="text-xs text-muted-foreground">per hour</p>
         </div>
       </div>
 

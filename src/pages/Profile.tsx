@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { User, Wallet, Settings, LogOut, Shield, Bell } from "lucide-react";
+import { User, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import tonnectLogo from "@/assets/new-tonnect-logo.png";
@@ -29,10 +29,6 @@ const Profile = () => {
 
   const handleConnectWallet = () => {
     toast.info("TON Wallet connection coming soon!");
-  };
-
-  const handleLogout = () => {
-    toast.success("Logged out successfully");
   };
 
   if (isLoading) {
@@ -126,52 +122,6 @@ const Profile = () => {
           <p className="text-2xl font-bold text-accent">{referralCount}</p>
           <p className="text-xs text-muted-foreground">Active users</p>
         </div>
-      </div>
-
-      {/* Settings Menu */}
-      <div className="cyber-card rounded-2xl p-4 space-y-2">
-        <h2 className="text-lg font-bold px-2 mb-2">Settings</h2>
-        
-        <button className="w-full flex items-center gap-3 p-4 rounded-lg hover:bg-muted/50 transition-colors text-left">
-          <User className="w-5 h-5 text-primary" />
-          <span className="font-medium">Edit Profile</span>
-        </button>
-
-        <button className="w-full flex items-center gap-3 p-4 rounded-lg hover:bg-muted/50 transition-colors text-left">
-          <Bell className="w-5 h-5 text-primary" />
-          <span className="font-medium">Notifications</span>
-        </button>
-
-        <button className="w-full flex items-center gap-3 p-4 rounded-lg hover:bg-muted/50 transition-colors text-left">
-          <Shield className="w-5 h-5 text-primary" />
-          <span className="font-medium">Security</span>
-        </button>
-
-        <button className="w-full flex items-center gap-3 p-4 rounded-lg hover:bg-muted/50 transition-colors text-left">
-          <Settings className="w-5 h-5 text-primary" />
-          <span className="font-medium">App Settings</span>
-        </button>
-      </div>
-
-      {/* Logout Button */}
-      <Button
-        onClick={handleLogout}
-        variant="outline"
-        className="w-full h-12 border-2 border-destructive text-destructive hover:bg-destructive hover:text-white"
-      >
-        <LogOut className="w-4 h-4 mr-2" />
-        Logout
-      </Button>
-
-      {/* Task Coming Soon */}
-      <div className="cyber-card rounded-2xl p-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
-          <Settings className="w-8 h-8 text-muted-foreground animate-spin-slow" />
-        </div>
-        <h3 className="font-bold mb-2">Tasks Feature</h3>
-        <p className="text-sm text-muted-foreground">
-          Complete daily tasks to earn bonus TONNECT. Coming soon!
-        </p>
       </div>
     </div>
   );

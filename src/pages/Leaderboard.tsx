@@ -1,9 +1,58 @@
-import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
+import { Trophy, Medal, Crown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useTelegram } from "@/contexts/TelegramContext";
+
+interface LeaderboardUser {
+  rank: number;
+  username: string;
+  balance: number;
+  telegram_id: number;
+}
 
 const Leaderboard = () => {
-  const currentUser = { rank: 0, username: "You", balance: 0 };
+  const { profile } = useTelegram();
+  const [topUsers, setTopUsers] = useState<LeaderboardUser[]>([]);
+  const [currentUserRank, setCurrentUserRank] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const topUsers: { rank: number; username: string; balance: number; change: string }[] = [];
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [profile]);
+
+  const fetchLeaderboard = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch all users ordered by balance
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select('telegram_id, username, first_name, total_balance')
+        .order('total_balance', { ascending: false });
+
+      if (error) throw error;
+
+      if (users) {
+        const leaderboard = users.map((user, index) => ({
+          rank: index + 1,
+          username: user.username || user.first_name || `User ${user.telegram_id}`,
+          balance: Number(user.total_balance) || 0,
+          telegram_id: user.telegram_id,
+        }));
+
+        setTopUsers(leaderboard);
+
+        // Find current user's rank
+        if (profile) {
+          const userRank = leaderboard.findIndex(u => u.telegram_id === profile.telegram_id);
+          setCurrentUserRank(userRank >= 0 ? userRank + 1 : 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-6 h-6 text-yellow-400" />;
@@ -19,6 +68,14 @@ const Leaderboard = () => {
     return "bg-muted/50";
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Loading leaderboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
@@ -27,21 +84,23 @@ const Leaderboard = () => {
       </div>
 
       {/* Your Rank Card */}
-      <div className="cyber-card rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Your Rank</p>
-            <p className="text-4xl font-bold text-primary">
-              {currentUser.rank > 0 ? `#${currentUser.rank}` : '-'}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground mb-1">Your Balance</p>
-            <p className="text-2xl font-bold">{currentUser.balance.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">TONNECT</p>
+      {profile && (
+        <div className="cyber-card rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Your Rank</p>
+              <p className="text-4xl font-bold text-primary">
+                {currentUserRank > 0 ? `#${currentUserRank}` : '-'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground mb-1">Your Balance</p>
+              <p className="text-2xl font-bold">{(profile.total_balance || 0).toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">TONNECT</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Top 3 Podium or Empty State */}
       <div className="cyber-card rounded-2xl p-6">
@@ -53,12 +112,12 @@ const Leaderboard = () => {
         {topUsers.length >= 3 ? (
           <div className="grid grid-cols-3 gap-2 mb-6">
             {/* 2nd Place */}
-            <div className="text-center order-1">
+              <div className="text-center order-1">
               <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-gray-300/20 flex items-center justify-center border-2 border-gray-300">
                 <Medal className="w-8 h-8 text-gray-300" />
               </div>
               <p className="text-xs text-muted-foreground mb-1">2nd</p>
-              <p className="font-bold text-sm truncate">{topUsers[1].username}</p>
+              <p className="font-bold text-sm truncate px-1">{topUsers[1].username}</p>
               <p className="text-xs text-primary">{topUsers[1].balance.toLocaleString()}</p>
             </div>
 
@@ -68,7 +127,7 @@ const Leaderboard = () => {
                 <Crown className="w-10 h-10 text-yellow-400" />
               </div>
               <p className="text-xs text-muted-foreground mb-1">1st</p>
-              <p className="font-bold truncate">{topUsers[0].username}</p>
+              <p className="font-bold truncate px-1">{topUsers[0].username}</p>
               <p className="text-sm text-primary">{topUsers[0].balance.toLocaleString()}</p>
             </div>
 
@@ -78,7 +137,7 @@ const Leaderboard = () => {
                 <Medal className="w-8 h-8 text-orange-400" />
               </div>
               <p className="text-xs text-muted-foreground mb-1">3rd</p>
-              <p className="font-bold text-sm truncate">{topUsers[2].username}</p>
+              <p className="font-bold text-sm truncate px-1">{topUsers[2].username}</p>
               <p className="text-xs text-primary">{topUsers[2].balance.toLocaleString()}</p>
             </div>
           </div>
@@ -110,10 +169,6 @@ const Leaderboard = () => {
                   </div>
                   <div>
                     <p className="font-bold">{user.username}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-green-400">{user.change}</span>
-                    </div>
                   </div>
                 </div>
                 <div className="text-right">

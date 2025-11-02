@@ -130,6 +130,20 @@ const Tasks = () => {
     const task = taskList.find(t => t.id === taskId);
     if (!task || task.started) return;
 
+    // Open appropriate link for hot tasks
+    if (taskType === 'hot') {
+      if (taskId === 'hot_telegram') {
+        window.open('https://t.me/Tonnect_Real', '_blank');
+      } else if (taskId === 'hot_twitter') {
+        window.open('https://x.com/T0NNECT', '_blank');
+      } else if (taskId === 'hot_retweet') {
+        window.open('https://x.com/T0NNECT', '_blank');
+      }
+    } else if (taskType === 'onchain') {
+      toast.info("This feature is coming soon!");
+      return;
+    }
+
     // Mark task as started
     const updatedTasks = taskList.map(t =>
       t.id === taskId ? { ...t, started: true } : t
@@ -291,11 +305,11 @@ const Tasks = () => {
               </div>
               
               <Button
-                onClick={() => task.started ? claimActionTask(task.id, 'onchain') : startActionTask(task.id, 'onchain')}
-                disabled={task.completed}
-                className={task.completed ? "bg-primary/20" : "bg-primary hover:bg-primary/90"}
+                onClick={() => startActionTask(task.id, 'onchain')}
+                disabled={true}
+                className="bg-muted"
               >
-                {task.completed ? "Claimed" : task.started ? "Claim" : "Start"}
+                Soon
               </Button>
             </div>
           </div>

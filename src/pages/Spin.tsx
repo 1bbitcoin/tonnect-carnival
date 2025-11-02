@@ -3,15 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Gift, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import tonnectIcon from "@/assets/new-tonnect-logo.png";
-import { addBalance, addSpinWin, getBalance, getTotalSpinWon } from "@/lib/balance";
+import { useTelegram } from "@/contexts/TelegramContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Spin = () => {
+  const { profile, refetch } = useTelegram();
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedPrize, setSelectedPrize] = useState<number | null>(null);
   const [canSpin, setCanSpin] = useState(true);
   const [timeLeft, setTimeLeft] = useState("");
-  const [currentBalance, setCurrentBalance] = useState(0);
-  const [totalWon, setTotalWon] = useState(0);
 
   const prizes = [
     { id: 0, value: 10, label: "TONNECT 10" },
@@ -25,15 +25,17 @@ const Spin = () => {
   ];
 
   useEffect(() => {
-    setCurrentBalance(getBalance());
-    setTotalWon(getTotalSpinWon());
+    if (!profile) return;
     checkSpinAvailability();
     const interval = setInterval(checkSpinAvailability, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [profile]);
 
   const checkSpinAvailability = () => {
-    const lastSpinTime = localStorage.getItem("lastSpinTime");
+    if (!profile) return;
+    
+    const storageKey = `lastSpinTime_${profile.telegram_id}`;
+    const lastSpinTime = localStorage.getItem(storageKey);
     if (!lastSpinTime) {
       setCanSpin(true);
       setTimeLeft("");
@@ -59,7 +61,7 @@ const Spin = () => {
   };
 
   const handleSpin = () => {
-    if (isSpinning || !canSpin) return;
+    if (isSpinning || !canSpin || !profile) return;
 
     setIsSpinning(true);
     setSelectedPrize(null);
@@ -72,23 +74,36 @@ const Spin = () => {
     }, 100);
 
     // Stop after 3 seconds and select winner
-    setTimeout(() => {
+    setTimeout(async () => {
       clearInterval(animationInterval);
       const winnerIndex = Math.floor(Math.random() * prizes.length);
       const winner = prizes[winnerIndex];
       setSelectedPrize(winnerIndex);
       setIsSpinning(false);
       
-      // Add to balance and total won
-      const newBalance = addBalance(winner.value);
-      const newTotalWon = addSpinWin(winner.value);
-      
-      localStorage.setItem("lastSpinTime", new Date().toISOString());
-      setCanSpin(false);
-      setCurrentBalance(newBalance);
-      setTotalWon(newTotalWon);
-      
-      toast.success(`You won ${winner.value} TONNECT! 🎉`);
+      try {
+        // Update balance in database
+        const newBalance = Number(profile.total_balance || 0) + winner.value;
+        
+        const { error } = await supabase
+          .from('profiles')
+          .update({ total_balance: newBalance })
+          .eq('id', profile.id);
+
+        if (error) throw error;
+
+        const storageKey = `lastSpinTime_${profile.telegram_id}`;
+        localStorage.setItem(storageKey, new Date().toISOString());
+        setCanSpin(false);
+        
+        toast.success(`You won ${winner.value} TONNECT! 🎉`);
+        
+        // Refetch profile to update balance
+        await refetch();
+      } catch (error) {
+        console.error('Error updating balance:', error);
+        toast.error('Failed to claim prize');
+      }
     }, 3000);
   };
 
@@ -104,7 +119,7 @@ const Spin = () => {
         <div className="flex justify-between items-center">
           <div>
             <p className="text-sm text-muted-foreground">Balance</p>
-            <p className="text-2xl font-bold text-primary">{currentBalance.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-primary">{Number(profile?.total_balance || 0).toFixed(2)}</p>
           </div>
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Next Draw</p>
@@ -113,8 +128,8 @@ const Spin = () => {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Total Won</p>
-            <p className="text-2xl font-bold text-secondary">{totalWon.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">Draw</p>
+            <p className="text-2xl font-bold text-secondary">Daily</p>
           </div>
         </div>
       </div>

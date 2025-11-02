@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Users, CheckCircle2, Lock, Send, Twitter, Wallet, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { addBalance, getBalance } from "@/lib/balance";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useTelegram } from "@/contexts/TelegramContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Task {
   id: string;
@@ -21,7 +22,7 @@ interface ActionTask {
 }
 
 const Tasks = () => {
-  const [currentBalance, setCurrentBalance] = useState(0);
+  const { profile, refetch } = useTelegram();
   const [referralCount, setReferralCount] = useState(0);
   
   const [tasks, setTasks] = useState<Task[]>([
@@ -46,21 +47,19 @@ const Tasks = () => {
   ]);
 
   useEffect(() => {
-    // Load current balance
-    setCurrentBalance(getBalance());
+    if (!profile) return;
+    
+    const storageKey = `tasks_${profile.telegram_id}`;
+    const hotTasksKey = `hot_tasks_${profile.telegram_id}`;
+    const onchainTasksKey = `onchain_tasks_${profile.telegram_id}`;
 
-    // Load saved tasks and referral count from localStorage
-    const savedTasks = localStorage.getItem("tasks_completed");
-    const savedReferrals = localStorage.getItem("referral_count");
-    const savedHotTasks = localStorage.getItem("hot_tasks_completed");
-    const savedOnchainTasks = localStorage.getItem("onchain_tasks_completed");
+    // Load saved tasks from localStorage
+    const savedTasks = localStorage.getItem(storageKey);
+    const savedHotTasks = localStorage.getItem(hotTasksKey);
+    const savedOnchainTasks = localStorage.getItem(onchainTasksKey);
     
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks));
-    }
-    
-    if (savedReferrals) {
-      setReferralCount(parseInt(savedReferrals));
     }
 
     if (savedHotTasks) {
@@ -70,32 +69,63 @@ const Tasks = () => {
     if (savedOnchainTasks) {
       setOnchainTasks(JSON.parse(savedOnchainTasks));
     }
-  }, []);
 
-  const claimReward = (taskId: string) => {
+    // Fetch referral count from database
+    fetchReferralCount();
+  }, [profile]);
+
+  const fetchReferralCount = async () => {
+    if (!profile?.id) return;
+    
+    const { count } = await supabase
+      .from('referrals')
+      .select('*', { count: 'exact', head: true })
+      .eq('referrer_id', profile.id);
+    
+    setReferralCount(count || 0);
+  };
+
+  const claimReward = async (taskId: string) => {
+    if (!profile) return;
+    
     const task = tasks.find(t => t.id === taskId);
     if (!task || task.completed) return;
 
     if (referralCount >= task.friends) {
-      // Add reward to balance
-      const newBalance = addBalance(task.reward);
-      setCurrentBalance(newBalance);
+      try {
+        // Update balance in database
+        const newBalance = Number(profile.total_balance || 0) + task.reward;
+        
+        const { error } = await supabase
+          .from('profiles')
+          .update({ total_balance: newBalance })
+          .eq('id', profile.id);
 
-      // Mark task as completed
-      const updatedTasks = tasks.map(t =>
-        t.id === taskId ? { ...t, completed: true } : t
-      );
-      setTasks(updatedTasks);
-      localStorage.setItem("tasks_completed", JSON.stringify(updatedTasks));
+        if (error) throw error;
 
-      toast({
-        title: "Reward Claimed!",
-        description: `+${task.reward.toLocaleString()} TONNECT added to your balance`,
-      });
+        // Mark task as completed
+        const updatedTasks = tasks.map(t =>
+          t.id === taskId ? { ...t, completed: true } : t
+        );
+        setTasks(updatedTasks);
+        
+        const storageKey = `tasks_${profile.telegram_id}`;
+        localStorage.setItem(storageKey, JSON.stringify(updatedTasks));
+
+        toast.success(`+${task.reward.toLocaleString()} TONNECT added to your balance`);
+        
+        // Refetch profile to update balance
+        await refetch();
+      } catch (error) {
+        console.error('Error claiming reward:', error);
+        toast.error('Failed to claim reward');
+      }
     }
   };
 
   const startActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
+    if (!profile) return;
+    
     const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
     const task = taskList.find(t => t.id === taskId);
     if (!task || task.started) return;
@@ -105,46 +135,62 @@ const Tasks = () => {
       t.id === taskId ? { ...t, started: true } : t
     );
     
+    const storageKey = taskType === 'hot' 
+      ? `hot_tasks_${profile.telegram_id}` 
+      : `onchain_tasks_${profile.telegram_id}`;
+    
     if (taskType === 'hot') {
       setHotTasks(updatedTasks);
-      localStorage.setItem("hot_tasks_completed", JSON.stringify(updatedTasks));
     } else {
       setOnchainTasks(updatedTasks);
-      localStorage.setItem("onchain_tasks_completed", JSON.stringify(updatedTasks));
     }
+    localStorage.setItem(storageKey, JSON.stringify(updatedTasks));
 
-    toast({
-      title: "Task Started!",
-      description: "Complete the task and come back to claim your reward",
-    });
+    toast.success("Task started! Complete it and come back to claim");
   };
 
-  const claimActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
+  const claimActionTask = async (taskId: string, taskType: 'hot' | 'onchain') => {
+    if (!profile) return;
+    
     const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
     const task = taskList.find(t => t.id === taskId);
     if (!task || task.completed || !task.started) return;
 
-    // Add reward to balance
-    const newBalance = addBalance(task.reward);
-    setCurrentBalance(newBalance);
+    try {
+      // Update balance in database
+      const newBalance = Number(profile.total_balance || 0) + task.reward;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ total_balance: newBalance })
+        .eq('id', profile.id);
 
-    // Mark task as completed
-    const updatedTasks = taskList.map(t =>
-      t.id === taskId ? { ...t, completed: true } : t
-    );
-    
-    if (taskType === 'hot') {
-      setHotTasks(updatedTasks);
-      localStorage.setItem("hot_tasks_completed", JSON.stringify(updatedTasks));
-    } else {
-      setOnchainTasks(updatedTasks);
-      localStorage.setItem("onchain_tasks_completed", JSON.stringify(updatedTasks));
+      if (error) throw error;
+
+      // Mark task as completed
+      const updatedTasks = taskList.map(t =>
+        t.id === taskId ? { ...t, completed: true } : t
+      );
+      
+      const storageKey = taskType === 'hot' 
+        ? `hot_tasks_${profile.telegram_id}` 
+        : `onchain_tasks_${profile.telegram_id}`;
+      
+      if (taskType === 'hot') {
+        setHotTasks(updatedTasks);
+      } else {
+        setOnchainTasks(updatedTasks);
+      }
+      localStorage.setItem(storageKey, JSON.stringify(updatedTasks));
+
+      toast.success(`+${task.reward.toLocaleString()} TONNECT added to your balance`);
+      
+      // Refetch profile to update balance
+      await refetch();
+    } catch (error) {
+      console.error('Error claiming task reward:', error);
+      toast.error('Failed to claim reward');
     }
-
-    toast({
-      title: "Reward Claimed!",
-      description: `+${task.reward.toLocaleString()} TONNECT added to your balance`,
-    });
   };
 
   return (
@@ -158,7 +204,7 @@ const Tasks = () => {
       {/* Balance Card */}
       <div className="cyber-card rounded-2xl p-6 text-center">
         <p className="text-sm text-muted-foreground mb-2">Your Balance</p>
-        <p className="text-4xl font-bold glow-text">{currentBalance.toLocaleString()}</p>
+        <p className="text-4xl font-bold glow-text">{Number(profile?.total_balance || 0).toLocaleString()}</p>
         <p className="text-sm text-accent mt-1">TONNECT</p>
       </div>
 

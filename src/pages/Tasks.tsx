@@ -59,15 +59,28 @@ const Tasks = () => {
     const savedOnchainTasks = localStorage.getItem(onchainTasksKey);
     
     if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
+      const parsedTasks = JSON.parse(savedTasks);
+      setTasks(parsedTasks);
     }
 
     if (savedHotTasks) {
-      setHotTasks(JSON.parse(savedHotTasks));
+      const parsedHotTasks = JSON.parse(savedHotTasks);
+      // Re-attach icons since they can't be stored in localStorage
+      const tasksWithIcons = parsedHotTasks.map((task: ActionTask) => {
+        const originalTask = hotTasks.find(t => t.id === task.id);
+        return { ...task, icon: originalTask?.icon };
+      });
+      setHotTasks(tasksWithIcons);
     }
 
     if (savedOnchainTasks) {
-      setOnchainTasks(JSON.parse(savedOnchainTasks));
+      const parsedOnchainTasks = JSON.parse(savedOnchainTasks);
+      // Re-attach icons since they can't be stored in localStorage
+      const tasksWithIcons = parsedOnchainTasks.map((task: ActionTask) => {
+        const originalTask = onchainTasks.find(t => t.id === task.id);
+        return { ...task, icon: originalTask?.icon };
+      });
+      setOnchainTasks(tasksWithIcons);
     }
 
     // Fetch referral count from database
@@ -158,7 +171,10 @@ const Tasks = () => {
     } else {
       setOnchainTasks(updatedTasks);
     }
-    localStorage.setItem(storageKey, JSON.stringify(updatedTasks));
+    
+    // Remove icon before storing to localStorage
+    const tasksToStore = updatedTasks.map(({ icon, ...rest }) => rest);
+    localStorage.setItem(storageKey, JSON.stringify(tasksToStore));
 
     toast.success("Task started! Complete it and come back to claim");
   };
@@ -195,7 +211,10 @@ const Tasks = () => {
       } else {
         setOnchainTasks(updatedTasks);
       }
-      localStorage.setItem(storageKey, JSON.stringify(updatedTasks));
+      
+      // Remove icon before storing to localStorage
+      const tasksToStore = updatedTasks.map(({ icon, ...rest }) => rest);
+      localStorage.setItem(storageKey, JSON.stringify(tasksToStore));
 
       toast.success(`+${task.reward.toLocaleString()} TONNECT added to your balance`);
       

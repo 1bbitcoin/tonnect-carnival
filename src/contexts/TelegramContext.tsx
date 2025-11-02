@@ -72,27 +72,48 @@ export const TelegramProvider = ({ children }: { children: ReactNode }) => {
 
       // Handle referral if exists
       if (referrerId && newProfile) {
-        const { data: referrerProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('telegram_id', parseInt(referrerId))
-          .maybeSingle();
-
-        if (referrerProfile) {
-          // Create referral record
-          await supabase
-            .from('referrals')
-            .insert({
-              referrer_id: referrerProfile.id,
-              referred_id: newProfile.id,
-              bonus_awarded: 100
-            });
-
-          // Update referrer balance
-          await supabase
+        try {
+          const { data: referrerProfile } = await supabase
             .from('profiles')
-            .update({ total_balance: referrerProfile.total_balance + 100 })
-            .eq('id', referrerProfile.id);
+            .select('*')
+            .eq('telegram_id', parseInt(referrerId))
+            .maybeSingle();
+
+          if (referrerProfile) {
+            // Calculate new balance
+            const currentBalance = Number(referrerProfile.total_balance) || 0;
+            const newBalance = currentBalance + 100;
+
+            // Create referral record
+            const { error: referralError } = await supabase
+              .from('referrals')
+              .insert({
+                referrer_id: referrerProfile.id,
+                referred_id: newProfile.id,
+                bonus_awarded: 100
+              });
+
+            if (referralError) {
+              console.error('Error creating referral record:', referralError);
+              throw referralError;
+            }
+
+            // Update referrer balance
+            const { error: balanceError } = await supabase
+              .from('profiles')
+              .update({ total_balance: newBalance })
+              .eq('telegram_id', parseInt(referrerId));
+
+            if (balanceError) {
+              console.error('Error updating referrer balance:', balanceError);
+              throw balanceError;
+            }
+
+            console.log(`Referral bonus awarded: +100 TONNECT to user ${referrerId}`);
+          }
+        } catch (referralError) {
+          console.error('Error processing referral:', referralError);
+          // Don't throw error here, allow user registration to continue
         }
       }
 

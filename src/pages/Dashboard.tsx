@@ -1,25 +1,35 @@
 import { useState, useEffect } from "react";
 import { Coins, TrendingUp } from "lucide-react";
 import tonnectLogo from "@/assets/new-tonnect-logo.png";
-import { getBalance, getTotalClaimed } from "@/lib/balance";
+import { useTelegram } from "@/contexts/TelegramContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  const { profile } = useTelegram();
   const [totalSupply] = useState(10000000000); // 10 Billion
   const [claimedTokens, setClaimedTokens] = useState(0);
-  const [userBalance, setUserBalance] = useState(0);
 
   useEffect(() => {
-    setUserBalance(getBalance());
-    setClaimedTokens(getTotalClaimed());
+    fetchTotalClaimed();
     
-    // Update balance and claimed tokens every second to reflect changes
-    const balanceInterval = setInterval(() => {
-      setUserBalance(getBalance());
-      setClaimedTokens(getTotalClaimed());
-    }, 1000);
+    // Update claimed tokens every 5 seconds
+    const interval = setInterval(() => {
+      fetchTotalClaimed();
+    }, 5000);
 
-    return () => clearInterval(balanceInterval);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchTotalClaimed = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('total_balance');
+    
+    if (data) {
+      const total = data.reduce((sum, profile) => sum + (Number(profile.total_balance) || 0), 0);
+      setClaimedTokens(total);
+    }
+  };
 
   const remainingSupply = totalSupply - claimedTokens;
   const claimedPercentage = ((claimedTokens / totalSupply) * 100).toFixed(2);
@@ -87,7 +97,7 @@ const Dashboard = () => {
         </h2>
         
         <div className="text-center py-4">
-          <p className="text-5xl font-bold glow-text">{userBalance.toLocaleString()}</p>
+          <p className="text-5xl font-bold glow-text">{Number(profile?.total_balance || 0).toLocaleString()}</p>
           <p className="text-lg text-muted-foreground mt-2">TONNECT</p>
         </div>
 

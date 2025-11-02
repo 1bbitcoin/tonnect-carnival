@@ -88,9 +88,12 @@ const Spin = () => {
         const { error } = await supabase
           .from('profiles')
           .update({ total_balance: newBalance })
-          .eq('id', profile.id);
+          .eq('telegram_id', profile.telegram_id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
 
         const storageKey = `lastSpinTime_${profile.telegram_id}`;
         localStorage.setItem(storageKey, new Date().toISOString());
@@ -102,7 +105,7 @@ const Spin = () => {
         await refetch();
       } catch (error) {
         console.error('Error updating balance:', error);
-        toast.error('Failed to claim prize');
+        toast.error('Failed to claim prize. Please try again.');
       }
     }, 3000);
   };

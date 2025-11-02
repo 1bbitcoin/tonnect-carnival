@@ -8,6 +8,7 @@ interface LeaderboardUser {
   username: string;
   balance: number;
   telegram_id: number;
+  photo_url?: string;
 }
 
 const Leaderboard = () => {
@@ -26,7 +27,7 @@ const Leaderboard = () => {
       // Fetch all users ordered by balance
       const { data: users, error } = await supabase
         .from('profiles')
-        .select('telegram_id, username, first_name, total_balance')
+        .select('telegram_id, username, first_name, total_balance, photo_url')
         .order('total_balance', { ascending: false });
 
       if (error) throw error;
@@ -34,9 +35,10 @@ const Leaderboard = () => {
       if (users) {
         const leaderboard = users.map((user, index) => ({
           rank: index + 1,
-          username: user.username || user.first_name || `User ${user.telegram_id}`,
+          username: user.first_name || user.username || `User ${user.telegram_id}`,
           balance: Number(user.total_balance) || 0,
           telegram_id: user.telegram_id,
+          photo_url: user.photo_url,
         }));
 
         setTopUsers(leaderboard);
@@ -167,6 +169,13 @@ const Leaderboard = () => {
                   <div className="w-10 flex items-center justify-center">
                     {getRankIcon(user.rank)}
                   </div>
+                  {user.photo_url && (
+                    <img 
+                      src={user.photo_url} 
+                      alt={user.username}
+                      className="w-10 h-10 rounded-full border-2 border-primary/30"
+                    />
+                  )}
                   <div>
                     <p className="font-bold">{user.username}</p>
                   </div>

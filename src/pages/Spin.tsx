@@ -14,14 +14,14 @@ const Spin = () => {
   const [timeLeft, setTimeLeft] = useState("");
 
   const prizes = [
-    { id: 0, value: 10, label: "TONNECT 10" },
-    { id: 1, value: 25, label: "TONNECT 25" },
-    { id: 2, value: 50, label: "TONNECT 50" },
-    { id: 3, value: 15, label: "TONNECT 15" },
-    { id: 4, value: 75, label: "TONNECT 75" },
-    { id: 5, value: 30, label: "TONNECT 30" },
-    { id: 6, value: 60, label: "TONNECT 60" },
-    { id: 7, value: 100, label: "TONNECT 100" },
+    { id: 0, value: 5, label: "TONNECT 5" },
+    { id: 1, value: 10, label: "TONNECT 10" },
+    { id: 2, value: 15, label: "TONNECT 15" },
+    { id: 3, value: 25, label: "TONNECT 25" },
+    { id: 4, value: 50, label: "TONNECT 50" },
+    { id: 5, value: 100, label: "TONNECT 100" },
+    { id: 6, value: 200, label: "TONNECT 200" },
+    { id: 7, value: 15, label: "TONNECT 15" },
   ];
 
   useEffect(() => {
@@ -31,20 +31,26 @@ const Spin = () => {
     return () => clearInterval(interval);
   }, [profile]);
 
-  const checkSpinAvailability = () => {
-    if (!profile) return;
+  const checkSpinAvailability = async () => {
+    if (!profile?.id) return;
     
-    const storageKey = `lastSpinTime_${profile.telegram_id}`;
-    const lastSpinTime = localStorage.getItem(storageKey);
-    if (!lastSpinTime) {
+    const { data: lastSpin } = await supabase
+      .from('user_spin_history')
+      .select('spin_time')
+      .eq('user_id', profile.id)
+      .order('spin_time', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!lastSpin) {
       setCanSpin(true);
       setTimeLeft("");
       return;
     }
 
-    const lastSpin = new Date(lastSpinTime).getTime();
+    const lastSpinTime = new Date(lastSpin.spin_time).getTime();
     const now = new Date().getTime();
-    const timeDiff = now - lastSpin;
+    const timeDiff = now - lastSpinTime;
     const twentyFourHours = 24 * 60 * 60 * 1000;
 
     if (timeDiff >= twentyFourHours) {
@@ -61,7 +67,7 @@ const Spin = () => {
   };
 
   const handleSpin = () => {
-    if (isSpinning || !canSpin || !profile) return;
+    if (isSpinning || !canSpin || !profile?.telegram_id) return;
 
     setIsSpinning(true);
     setSelectedPrize(null);
@@ -73,39 +79,39 @@ const Spin = () => {
       currentIndex++;
     }, 100);
 
-    // Stop after 3 seconds and select winner
+    // Stop after 3 seconds and call edge function
     setTimeout(async () => {
       clearInterval(animationInterval);
-      const winnerIndex = Math.floor(Math.random() * prizes.length);
-      const winner = prizes[winnerIndex];
-      setSelectedPrize(winnerIndex);
-      setIsSpinning(false);
       
       try {
-        // Update balance in database
-        const newBalance = Number(profile.total_balance || 0) + winner.value;
-        
-        const { error } = await supabase
-          .from('profiles')
-          .update({ total_balance: newBalance })
-          .eq('telegram_id', profile.telegram_id);
+        const { data, error } = await supabase.functions.invoke('claim-spin', {
+          body: { telegram_id: profile.telegram_id }
+        });
 
-        if (error) {
-          console.error('Supabase error:', error);
-          throw error;
+        if (error) throw error;
+
+        if (data.success) {
+          // Find the prize index that matches the server's result
+          const winnerIndex = prizes.findIndex(p => p.value === data.prizeValue);
+          setSelectedPrize(winnerIndex >= 0 ? winnerIndex : 0);
+          setIsSpinning(false);
+          setCanSpin(false);
+          
+          toast.success(data.message);
+          await refetch();
+        } else {
+          setIsSpinning(false);
+          toast.error(data.message);
+          if (data.timeRemaining) {
+            const hours = Math.floor(data.timeRemaining / 3600);
+            const minutes = Math.floor((data.timeRemaining % 3600) / 60);
+            const seconds = data.timeRemaining % 60;
+            setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+          }
         }
-
-        const storageKey = `lastSpinTime_${profile.telegram_id}`;
-        localStorage.setItem(storageKey, new Date().toISOString());
-        setCanSpin(false);
-        
-        toast.success(`You won ${winner.value} TONNECT! 🎉`);
-        
-        // Refetch profile to update balance
-        await refetch();
       } catch (error) {
-        console.error('Error updating balance:', error);
-        toast.error('Failed to claim prize. Please try again.');
+        setIsSpinning(false);
+        toast.error('Failed to complete spin. Please try again.');
       }
     }, 3000);
   };
@@ -205,7 +211,7 @@ const Spin = () => {
           How It Works
         </h3>
         <p className="text-sm text-muted-foreground">
-          Draw once every 24 hours to win TONNECT tokens! Prizes range from 10 to 100 TONNECT.
+          Draw once every 24 hours to win TONNECT tokens! Prizes range from 5 to 200 TONNECT.
         </p>
       </div>
     </div>

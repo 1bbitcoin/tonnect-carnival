@@ -24,67 +24,31 @@ interface ActionTask {
 const Tasks = () => {
   const { profile, refetch } = useTelegram();
   const [referralCount, setReferralCount] = useState(0);
+  const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: "task_1", friends: 1, reward: 50, completed: false },
-    { id: "task_5", friends: 5, reward: 300, completed: false },
-    { id: "task_10", friends: 10, reward: 500, completed: false },
-    { id: "task_50", friends: 50, reward: 1200, completed: false },
-    { id: "task_100", friends: 100, reward: 2500, completed: false },
-    { id: "task_1000", friends: 1000, reward: 20000, completed: false },
-    { id: "task_10000", friends: 10000, reward: 150000, completed: false },
+  const [tasks] = useState<Task[]>([
+    { id: "friend1", friends: 1, reward: 100, completed: false },
+    { id: "friend5", friends: 5, reward: 300, completed: false },
+    { id: "friend10", friends: 10, reward: 500, completed: false },
+    { id: "friend50", friends: 50, reward: 1200, completed: false },
+    { id: "friend100", friends: 100, reward: 2500, completed: false },
   ]);
 
-  const [hotTasks, setHotTasks] = useState<ActionTask[]>([
-    { id: "hot_telegram", title: "Subscribe Channel", reward: 50, completed: false, started: false, icon: <Send className="w-5 h-5" /> },
-    { id: "hot_twitter", title: "Follow X", reward: 50, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
-    { id: "hot_retweet", title: "Like & RT Post", reward: 50, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
+  const [hotTasks] = useState<ActionTask[]>([
+    { id: "hot_telegram", title: "Subscribe Channel", reward: 150, completed: false, started: false, icon: <Send className="w-5 h-5" /> },
+    { id: "hot_twitter", title: "Follow X", reward: 150, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
+    { id: "hot_retweet", title: "Like & RT Post", reward: 200, completed: false, started: false, icon: <Twitter className="w-5 h-5" /> },
   ]);
 
-  const [onchainTasks, setOnchainTasks] = useState<ActionTask[]>([
-    { id: "onchain_wallet", title: "Connect TON Wallet", reward: 100, completed: false, started: false, icon: <Wallet className="w-5 h-5" /> },
-    { id: "onchain_email", title: "Bind Email", reward: 100, completed: false, started: false, icon: <Mail className="w-5 h-5" /> },
+  const [onchainTasks] = useState<ActionTask[]>([
+    { id: "onchain_wallet", title: "Connect TON Wallet", reward: 250, completed: false, started: false, icon: <Wallet className="w-5 h-5" /> },
+    { id: "onchain_email", title: "Bind Email", reward: 300, completed: false, started: false, icon: <Mail className="w-5 h-5" /> },
   ]);
 
   useEffect(() => {
     if (!profile) return;
-    
-    const storageKey = `tasks_${profile.telegram_id}`;
-    const hotTasksKey = `hot_tasks_${profile.telegram_id}`;
-    const onchainTasksKey = `onchain_tasks_${profile.telegram_id}`;
-
-    // Load saved tasks from localStorage
-    const savedTasks = localStorage.getItem(storageKey);
-    const savedHotTasks = localStorage.getItem(hotTasksKey);
-    const savedOnchainTasks = localStorage.getItem(onchainTasksKey);
-    
-    if (savedTasks) {
-      const parsedTasks = JSON.parse(savedTasks);
-      setTasks(parsedTasks);
-    }
-
-    if (savedHotTasks) {
-      const parsedHotTasks = JSON.parse(savedHotTasks);
-      // Re-attach icons since they can't be stored in localStorage
-      const tasksWithIcons = parsedHotTasks.map((task: ActionTask) => {
-        const originalTask = hotTasks.find(t => t.id === task.id);
-        return { ...task, icon: originalTask?.icon };
-      });
-      setHotTasks(tasksWithIcons);
-    }
-
-    if (savedOnchainTasks) {
-      const parsedOnchainTasks = JSON.parse(savedOnchainTasks);
-      // Re-attach icons since they can't be stored in localStorage
-      const tasksWithIcons = parsedOnchainTasks.map((task: ActionTask) => {
-        const originalTask = onchainTasks.find(t => t.id === task.id);
-        return { ...task, icon: originalTask?.icon };
-      });
-      setOnchainTasks(tasksWithIcons);
-    }
-
-    // Fetch referral count from database
     fetchReferralCount();
+    fetchCompletedTasks();
   }, [profile]);
 
   const fetchReferralCount = async () => {
@@ -98,51 +62,48 @@ const Tasks = () => {
     setReferralCount(count || 0);
   };
 
-  const claimReward = async (taskId: string) => {
-    if (!profile) return;
+  const fetchCompletedTasks = async () => {
+    if (!profile?.id) return;
     
-    const task = tasks.find(t => t.id === taskId);
-    if (!task || task.completed) return;
+    const { data } = await supabase
+      .from('user_task_completions')
+      .select('task_id')
+      .eq('user_id', profile.id);
+    
+    if (data) {
+      setCompletedTasks(new Set(data.map(t => t.task_id)));
+    }
+  };
 
-    if (referralCount >= task.friends) {
-      try {
-        // Update balance in database
-        const newBalance = Number(profile.total_balance || 0) + task.reward;
-        
-        const { error } = await supabase
-          .from('profiles')
-          .update({ total_balance: newBalance })
-          .eq('id', profile.id);
+  const claimReward = async (taskId: string, reward: number) => {
+    if (!profile?.telegram_id) return;
 
-        if (error) throw error;
+    try {
+      const { data, error } = await supabase.functions.invoke('claim-task', {
+        body: {
+          telegram_id: profile.telegram_id,
+          task_id: taskId,
+          reward_amount: reward
+        }
+      });
 
-        // Mark task as completed
-        const updatedTasks = tasks.map(t =>
-          t.id === taskId ? { ...t, completed: true } : t
-        );
-        setTasks(updatedTasks);
-        
-        const storageKey = `tasks_${profile.telegram_id}`;
-        localStorage.setItem(storageKey, JSON.stringify(updatedTasks));
+      if (error) throw error;
 
-        toast.success(`+${task.reward.toLocaleString()} TONNECT added to your balance`);
-        
-        // Refetch profile to update balance
+      if (data.success) {
+        toast.success(data.message);
+        setCompletedTasks(prev => new Set([...prev, taskId]));
         await refetch();
-      } catch (error) {
-        console.error('Error claiming reward:', error);
-        toast.error('Failed to claim reward');
+      } else {
+        toast.error(data.message);
       }
+    } catch (error) {
+      toast.error('Failed to claim reward');
     }
   };
 
   const startActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
     if (!profile) return;
     
-    const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
-    const task = taskList.find(t => t.id === taskId);
-    if (!task || task.started) return;
-
     // Open appropriate link for hot tasks
     if (taskType === 'hot') {
       if (taskId === 'hot_telegram') {
@@ -152,77 +113,9 @@ const Tasks = () => {
       } else if (taskId === 'hot_retweet') {
         window.open('https://x.com/T0NNECT', '_blank');
       }
+      toast.success("Task started! Complete it and come back to claim");
     } else if (taskType === 'onchain') {
       toast.info("This feature is coming soon!");
-      return;
-    }
-
-    // Mark task as started
-    const updatedTasks = taskList.map(t =>
-      t.id === taskId ? { ...t, started: true } : t
-    );
-    
-    const storageKey = taskType === 'hot' 
-      ? `hot_tasks_${profile.telegram_id}` 
-      : `onchain_tasks_${profile.telegram_id}`;
-    
-    if (taskType === 'hot') {
-      setHotTasks(updatedTasks);
-    } else {
-      setOnchainTasks(updatedTasks);
-    }
-    
-    // Remove icon before storing to localStorage
-    const tasksToStore = updatedTasks.map(({ icon, ...rest }) => rest);
-    localStorage.setItem(storageKey, JSON.stringify(tasksToStore));
-
-    toast.success("Task started! Complete it and come back to claim");
-  };
-
-  const claimActionTask = async (taskId: string, taskType: 'hot' | 'onchain') => {
-    if (!profile) return;
-    
-    const taskList = taskType === 'hot' ? hotTasks : onchainTasks;
-    const task = taskList.find(t => t.id === taskId);
-    if (!task || task.completed || !task.started) return;
-
-    try {
-      // Update balance in database
-      const newBalance = Number(profile.total_balance || 0) + task.reward;
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ total_balance: newBalance })
-        .eq('id', profile.id);
-
-      if (error) throw error;
-
-      // Mark task as completed
-      const updatedTasks = taskList.map(t =>
-        t.id === taskId ? { ...t, completed: true } : t
-      );
-      
-      const storageKey = taskType === 'hot' 
-        ? `hot_tasks_${profile.telegram_id}` 
-        : `onchain_tasks_${profile.telegram_id}`;
-      
-      if (taskType === 'hot') {
-        setHotTasks(updatedTasks);
-      } else {
-        setOnchainTasks(updatedTasks);
-      }
-      
-      // Remove icon before storing to localStorage
-      const tasksToStore = updatedTasks.map(({ icon, ...rest }) => rest);
-      localStorage.setItem(storageKey, JSON.stringify(tasksToStore));
-
-      toast.success(`+${task.reward.toLocaleString()} TONNECT added to your balance`);
-      
-      // Refetch profile to update balance
-      await refetch();
-    } catch (error) {
-      console.error('Error claiming task reward:', error);
-      toast.error('Failed to claim reward');
     }
   };
 
@@ -260,38 +153,56 @@ const Tasks = () => {
           Hot Tasks
         </h3>
         
-        {hotTasks.map((task) => (
-          <div
-            key={task.id}
-            className={`cyber-card rounded-xl p-4 ${
-              task.completed ? "opacity-60" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  {task.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                  ) : (
-                    <span className="text-accent">{task.icon}</span>
-                  )}
-                  <h4 className="font-bold">{task.title}</h4>
+        {hotTasks.map((task) => {
+          const isCompleted = completedTasks.has(task.id);
+          
+          return (
+            <div
+              key={task.id}
+              className={`cyber-card rounded-xl p-4 ${
+                isCompleted ? "opacity-60" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-5 h-5 text-primary" />
+                    ) : (
+                      <span className="text-accent">{task.icon}</span>
+                    )}
+                    <h4 className="font-bold">{task.title}</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Reward: <span className="text-primary font-bold">+{task.reward.toLocaleString()} TONNECT</span>
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Reward: <span className="text-primary font-bold">+{task.reward.toLocaleString()} TONNECT</span>
-                </p>
+                
+                {isCompleted ? (
+                  <Button disabled className="bg-primary/20">
+                    Claimed
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => startActionTask(task.id, 'hot')}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Start
+                    </Button>
+                    <Button
+                      onClick={() => claimReward(task.id, task.reward)}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      Claim
+                    </Button>
+                  </div>
+                )}
               </div>
-              
-              <Button
-                onClick={() => task.started ? claimActionTask(task.id, 'hot') : startActionTask(task.id, 'hot')}
-                disabled={task.completed}
-                className={task.completed ? "bg-primary/20" : "bg-primary hover:bg-primary/90"}
-              >
-                {task.completed ? "Claimed" : task.started ? "Claim" : "Start"}
-              </Button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Onchain Tasks */}
@@ -304,18 +215,12 @@ const Tasks = () => {
         {onchainTasks.map((task) => (
           <div
             key={task.id}
-            className={`cyber-card rounded-xl p-4 ${
-              task.completed ? "opacity-60" : ""
-            }`}
+            className="cyber-card rounded-xl p-4 opacity-60"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  {task.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                  ) : (
-                    <span className="text-primary">{task.icon}</span>
-                  )}
+                  <span className="text-primary">{task.icon}</span>
                   <h4 className="font-bold">{task.title}</h4>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -323,11 +228,7 @@ const Tasks = () => {
                 </p>
               </div>
               
-              <Button
-                onClick={() => startActionTask(task.id, 'onchain')}
-                disabled={true}
-                className="bg-muted"
-              >
+              <Button disabled className="bg-muted">
                 Soon
               </Button>
             </div>
@@ -344,7 +245,7 @@ const Tasks = () => {
         
         {tasks.map((task) => {
           const isAvailable = referralCount >= task.friends;
-          const isCompleted = task.completed;
+          const isCompleted = completedTasks.has(task.id);
 
           return (
             <div
@@ -378,7 +279,7 @@ const Tasks = () => {
                 </div>
                 
                 <Button
-                  onClick={() => claimReward(task.id)}
+                  onClick={() => claimReward(task.id, task.reward)}
                   disabled={!isAvailable || isCompleted}
                   className={`${
                     isCompleted

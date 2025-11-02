@@ -79,13 +79,106 @@ export type Database = {
           {
             foreignKeyName: "referrals_referred_id_fkey"
             columns: ["referred_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "referrals_referrer_id_fkey"
             columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_mining_state: {
+        Row: {
+          created_at: string | null
+          last_claim_time: string | null
+          mining_start_time: string
+          total_mined: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          last_claim_time?: string | null
+          mining_start_time?: string
+          total_mined?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          last_claim_time?: string | null
+          mining_start_time?: string
+          total_mined?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mining_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_spin_history: {
+        Row: {
+          id: string
+          prize_value: number
+          spin_time: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          prize_value: number
+          spin_time?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          prize_value?: number
+          spin_time?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_spin_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_task_completions: {
+        Row: {
+          completed_at: string | null
+          id: string
+          reward_amount: number
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          reward_amount: number
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          reward_amount?: number
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_task_completions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

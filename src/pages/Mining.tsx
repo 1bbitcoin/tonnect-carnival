@@ -15,66 +15,41 @@ const Mining = () => {
   const [miningAmount, setMiningAmount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
   const [canClaim, setCanClaim] = useState(false);
-  const [totalMined, setTotalMined] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load mining state from localStorage on mount
+  // Fetch mining state from server
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.telegram_id) return;
     
-    const storageKey = `miningState_${profile.telegram_id}`;
-    const savedState = localStorage.getItem(storageKey);
-    
-    if (savedState) {
-      const { startTime } = JSON.parse(savedState);
-      const now = Date.now();
-      const elapsed = (now - startTime) / 1000; // seconds
-      
-      if (elapsed >= totalSeconds) {
-        // Ready to claim
-        setMiningAmount(maxTokens);
-        setTimeLeft(0);
-        setCanClaim(true);
-      } else {
-        // Still mining
-        const earnedAmount = Math.min((elapsed / 3600) * tokensPerHour, maxTokens);
-        setMiningAmount(earnedAmount);
-        setTimeLeft(Math.max(0, totalSeconds - Math.floor(elapsed)));
-        setCanClaim(false);
+    const fetchMiningState = async () => {
+      const { data: miningState } = await supabase
+        .from('user_mining_state')
+        .select('*')
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      if (miningState) {
+        const now = Date.now();
+        const startTime = new Date(miningState.mining_start_time).getTime();
+        const elapsed = (now - startTime) / 1000; // seconds
+        
+        if (elapsed >= totalSeconds) {
+          setMiningAmount(maxTokens);
+          setTimeLeft(0);
+          setCanClaim(true);
+        } else {
+          const earnedAmount = Math.min((elapsed / 3600) * tokensPerHour, maxTokens);
+          setMiningAmount(earnedAmount);
+          setTimeLeft(Math.max(0, totalSeconds - Math.floor(elapsed)));
+          setCanClaim(false);
+        }
       }
-    } else {
-      // First time mining - initialize state
-      const now = Date.now();
-      localStorage.setItem(storageKey, JSON.stringify({
-        startTime: now,
-        lastClaimTime: 0,
-      }));
-    }
-  }, [profile]);
+    };
 
-  // Update mining progress every second
-  useEffect(() => {
-    if (!profile) return;
+    fetchMiningState();
     
-    const storageKey = `miningState_${profile.telegram_id}`;
-    const interval = setInterval(() => {
-      const savedState = localStorage.getItem(storageKey);
-      if (!savedState) return;
-
-      const { startTime } = JSON.parse(savedState);
-      const now = Date.now();
-      const elapsed = (now - startTime) / 1000;
-
-      if (elapsed >= totalSeconds) {
-        setMiningAmount(maxTokens);
-        setTimeLeft(0);
-        setCanClaim(true);
-      } else {
-        const earnedAmount = Math.min((elapsed / 3600) * tokensPerHour, maxTokens);
-        setMiningAmount(earnedAmount);
-        setTimeLeft(Math.max(0, totalSeconds - Math.floor(elapsed)));
-      }
-    }, 1000);
-
+    // Update mining progress every second
+    const interval = setInterval(fetchMiningState, 1000);
     return () => clearInterval(interval);
   }, [profile]);
 
@@ -88,38 +63,37 @@ const Mining = () => {
   };
 
   const handleClaim = async () => {
-    if (!profile) return;
+    if (!profile?.telegram_id || isLoading) return;
 
-    const storageKey = `miningState_${profile.telegram_id}`;
+    setIsLoading(true);
     
     try {
-      // Update balance in database
-      const newBalance = Number(profile.total_balance || 0) + miningAmount;
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ total_balance: newBalance })
-        .eq('id', profile.id);
+      const { data, error } = await supabase.functions.invoke('claim-mining', {
+        body: { telegram_id: profile.telegram_id }
+      });
 
       if (error) throw error;
 
-      // Reset mining cycle
-      const now = Date.now();
-      localStorage.setItem(storageKey, JSON.stringify({
-        startTime: now,
-        lastClaimTime: now,
-      }));
-      
-      toast.success(`Claimed ${miningAmount.toFixed(2)} TONNECT!`);
-      setMiningAmount(0);
-      setTimeLeft(totalSeconds);
-      setCanClaim(false);
-      
-      // Refetch profile to update balance
-      await refetch();
+      if (data.success) {
+        toast.success(data.message);
+        setMiningAmount(0);
+        setTimeLeft(totalSeconds);
+        setCanClaim(false);
+        await refetch();
+      } else {
+        toast.info(data.message);
+        if (data.timeRemaining) {
+          setTimeLeft(data.timeRemaining);
+        }
+        if (typeof data.miningAmount === 'number') {
+          setMiningAmount(data.miningAmount);
+        }
+        setCanClaim(data.canClaim || false);
+      }
     } catch (error) {
-      console.error('Error claiming tokens:', error);
       toast.error('Failed to claim tokens');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -200,11 +174,11 @@ const Mining = () => {
       <div className="space-y-3">
         <Button
           onClick={handleClaim}
-          disabled={!canClaim}
+          disabled={!canClaim || isLoading}
           className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,212,255,0.5)] hover:shadow-[0_0_30px_rgba(0,212,255,0.8)] transition-all"
         >
           <Zap className="w-5 h-5 mr-2" />
-          {canClaim ? "Claim Now" : "Mining in Progress..."}
+          {isLoading ? "Claiming..." : canClaim ? "Claim Now" : "Mining in Progress..."}
         </Button>
 
         <Button

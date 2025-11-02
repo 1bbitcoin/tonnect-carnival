@@ -41,85 +41,19 @@ export const TelegramProvider = ({ children }: { children: ReactNode }) => {
 
   const createOrGetProfile = async (telegramUser: TelegramUser, referrerId?: string) => {
     try {
-      // Check if profile exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('telegram_id', telegramUser.id)
-        .maybeSingle();
-
-      if (existingProfile) {
-        return existingProfile;
-      }
-
-      // Create new profile
-      const referralCode = `REF${telegramUser.id}`;
-      const { data: newProfile, error } = await supabase
-        .from('profiles')
-        .insert({
-          telegram_id: telegramUser.id,
-          username: telegramUser.username || null,
-          first_name: telegramUser.first_name || null,
-          last_name: telegramUser.last_name || null,
-          referral_code: referralCode,
-          total_balance: 0,
-          photo_url: telegramUser.photo_url || null
-        })
-        .select()
-        .single();
+      // Use edge function for secure profile creation
+      const { data, error } = await supabase.functions.invoke('create-profile', {
+        body: {
+          telegram_user: telegramUser,
+          referrer_telegram_id: referrerId
+        }
+      });
 
       if (error) throw error;
-
-      // Handle referral if exists
-      if (referrerId && newProfile) {
-        try {
-          const { data: referrerProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('telegram_id', parseInt(referrerId))
-            .maybeSingle();
-
-          if (referrerProfile) {
-            // Calculate new balance
-            const currentBalance = Number(referrerProfile.total_balance) || 0;
-            const newBalance = currentBalance + 100;
-
-            // Create referral record
-            const { error: referralError } = await supabase
-              .from('referrals')
-              .insert({
-                referrer_id: referrerProfile.id,
-                referred_id: newProfile.id,
-                bonus_awarded: 100
-              });
-
-            if (referralError) {
-              console.error('Error creating referral record:', referralError);
-              throw referralError;
-            }
-
-            // Update referrer balance
-            const { error: balanceError } = await supabase
-              .from('profiles')
-              .update({ total_balance: newBalance })
-              .eq('telegram_id', parseInt(referrerId));
-
-            if (balanceError) {
-              console.error('Error updating referrer balance:', balanceError);
-              throw balanceError;
-            }
-
-            console.log(`Referral bonus awarded: +100 TONNECT to user ${referrerId}`);
-          }
-        } catch (referralError) {
-          console.error('Error processing referral:', referralError);
-          // Don't throw error here, allow user registration to continue
-        }
-      }
-
-      return newProfile;
+      
+      return data.profile;
     } catch (error) {
-      console.error('Error creating/getting profile:', error);
+      console.error('Error creating/getting profile');
       return null;
     }
   };

@@ -189,23 +189,23 @@ const Mining = () => {
 
       <div className="space-y-3">
         {!hasStarted ? (
-          <Button
+          <button
             onClick={handleStart}
             disabled={isStarting}
-            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-[0_0_20px_rgba(0,212,255,0.5)] hover:shadow-[0_0_30px_rgba(0,212,255,0.8)] transition-all"
+            className="btn-3d btn-3d-warm w-full h-16 text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Play className="w-5 h-5 mr-2" />
+            <Play className="w-6 h-6" />
             {isStarting ? "Starting..." : "Start Mining"}
-          </Button>
+          </button>
         ) : (
-          <Button
+          <button
             onClick={handleClaim}
             disabled={!canClaim || isLoading}
-            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,212,255,0.5)] hover:shadow-[0_0_30px_rgba(0,212,255,0.8)] transition-all"
+            className="btn-3d w-full h-16 text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Zap className="w-5 h-5 mr-2" />
+            <Zap className="w-6 h-6" />
             {isLoading ? "Claiming..." : canClaim ? "Claim Now" : "Mining in Progress..."}
-          </Button>
+          </button>
         )}
 
         <Button

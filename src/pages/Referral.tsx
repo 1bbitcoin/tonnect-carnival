@@ -142,10 +142,6 @@ const Referral = () => {
           </Button>
         </div>
 
-        <div className="text-center p-4 bg-primary/10 rounded-lg border border-primary/30">
-          <p className="text-xs text-muted-foreground mb-2">Your Referral Code</p>
-          <p className="text-lg font-bold font-mono">{profile?.referral_code || 'Loading...'}</p>
-        </div>
       </div>
 
       {/* Stats Grid */}

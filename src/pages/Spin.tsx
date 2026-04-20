@@ -66,54 +66,58 @@ const Spin = () => {
     }
   };
 
-  const handleSpin = () => {
+  const handleSpin = async () => {
     if (isSpinning || !canSpin || !profile?.telegram_id) return;
 
     setIsSpinning(true);
     setSelectedPrize(null);
 
-    // Animate through prizes
-    let currentIndex = 0;
+    // Start animation immediately
+    let currentIndex = Math.floor(Math.random() * prizes.length);
     const animationInterval = setInterval(() => {
-      setSelectedPrize(currentIndex % prizes.length);
-      currentIndex++;
+      currentIndex = (currentIndex + 1) % prizes.length;
+      setSelectedPrize(currentIndex);
     }, 100);
 
-    // Stop after 3 seconds and call edge function
-    setTimeout(async () => {
+    // Call edge function in parallel with animation
+    const apiCall = supabase.functions.invoke('claim-spin', {
+      body: { telegram_id: profile.telegram_id },
+    });
+
+    // Minimum animation duration: 3s
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 3000));
+
+    try {
+      const [{ data, error }] = await Promise.all([apiCall, minDelay]);
       clearInterval(animationInterval);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('claim-spin', {
-          body: { telegram_id: profile.telegram_id }
-        });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data.success) {
-          // Find the prize index that matches the server's result
-          const winnerIndex = prizes.findIndex(p => p.value === data.prizeValue);
-          setSelectedPrize(winnerIndex >= 0 ? winnerIndex : 0);
-          setIsSpinning(false);
-          setCanSpin(false);
-          
-          toast.success(data.message);
-          await refetch();
-        } else {
-          setIsSpinning(false);
-          toast.error(data.message);
-          if (data.timeRemaining) {
-            const hours = Math.floor(data.timeRemaining / 3600);
-            const minutes = Math.floor((data.timeRemaining % 3600) / 60);
-            const seconds = data.timeRemaining % 60;
-            setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-          }
-        }
-      } catch (error) {
+      if (data?.success) {
+        const winnerIndex = prizes.findIndex((p) => p.value === data.prizeValue);
+        setSelectedPrize(winnerIndex >= 0 ? winnerIndex : 0);
         setIsSpinning(false);
-        toast.error('Failed to complete spin. Please try again.');
+        setCanSpin(false);
+        toast.success(data.message);
+        await refetch();
+      } else {
+        setIsSpinning(false);
+        setSelectedPrize(null);
+        toast.error(data?.message || 'Cannot spin right now');
+        if (data?.timeRemaining) {
+          const hours = Math.floor(data.timeRemaining / 3600);
+          const minutes = Math.floor((data.timeRemaining % 3600) / 60);
+          const seconds = data.timeRemaining % 60;
+          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+          setCanSpin(false);
+        }
       }
-    }, 3000);
+    } catch (err) {
+      clearInterval(animationInterval);
+      setIsSpinning(false);
+      setSelectedPrize(null);
+      toast.error('Failed to complete spin. Please try again.');
+    }
   };
 
   return (

@@ -64,7 +64,7 @@ const Referral = () => {
   };
 
   const referralLink = profile?.telegram_id 
-    ? `https://t.me/tonnect_app_bot/start?startapp=ref%3D${profile.telegram_id}`
+    ? `https://t.me/tonnect_app_bot/app?startapp=${profile.telegram_id}`
     : "";
 
   const stats = [

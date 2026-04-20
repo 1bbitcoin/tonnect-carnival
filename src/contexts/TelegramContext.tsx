@@ -69,9 +69,14 @@ export const TelegramProvider = ({ children }: { children: ReactNode }) => {
       if (telegramUser) {
         setUser(telegramUser);
         
-        // Extract referrer ID from start_param
+        // Extract referrer ID from start_param (Telegram startapp only allows [A-Za-z0-9_-])
         const startParam = WebApp.initDataUnsafe?.start_param;
-        const referrerId = startParam?.replace('ref=', '');
+        let referrerId: string | undefined;
+        if (startParam) {
+          // Support both raw telegram_id and legacy "ref=<id>" / "ref<id>" formats
+          const cleaned = startParam.replace(/^ref[=_-]?/i, '');
+          if (/^\d+$/.test(cleaned)) referrerId = cleaned;
+        }
         
         const userProfile = await createOrGetProfile(telegramUser, referrerId);
         setProfile(userProfile);

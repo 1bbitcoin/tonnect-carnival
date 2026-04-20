@@ -52,22 +52,15 @@ Deno.serve(async (req) => {
     const MINING_RATE = 10; // 10 TONNECT per hour
     const MAX_MINING = 40; // 40 TONNECT max per cycle
 
-    // If no mining state, create one
+    // No mining session yet — user must press Start
     if (!miningState) {
-      await supabaseClient
-        .from('user_mining_state')
-        .insert({
-          user_id: profile.id,
-          mining_start_time: new Date().toISOString(),
-          total_mined: 0
-        });
-
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Mining started. Come back in 4 hours.',
+        JSON.stringify({
+          success: false,
+          message: 'Press Start to begin mining',
           canClaim: false,
-          miningAmount: 0
+          notStarted: true,
+          miningAmount: 0,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -111,14 +104,10 @@ Deno.serve(async (req) => {
       throw balanceError;
     }
 
-    // Reset mining cycle
+    // Remove mining state — user must press Start again to mine next cycle
     await supabaseClient
       .from('user_mining_state')
-      .update({
-        mining_start_time: new Date().toISOString(),
-        last_claim_time: new Date().toISOString(),
-        total_mined: newTotalMined
-      })
+      .delete()
       .eq('user_id', profile.id);
 
     console.log(`Mining claimed: ${miningAmount} TONNECT for user ${telegram_id}`);

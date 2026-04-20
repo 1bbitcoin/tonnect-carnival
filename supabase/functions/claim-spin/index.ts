@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
             canSpin: false,
             timeRemaining: Math.floor(remaining / 1000)
           }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }

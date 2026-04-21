@@ -166,25 +166,6 @@ const Tasks = () => {
         <p className="text-lg text-muted-foreground">Complete tasks to earn TONNECT</p>
       </div>
 
-      {/* Balance Card */}
-      <div className="cyber-card rounded-2xl p-6 text-center">
-        <p className="text-sm text-muted-foreground mb-2">Your Balance</p>
-        <p className="text-4xl font-bold glow-text">{Number(profile?.total_balance || 0).toLocaleString()}</p>
-        <p className="text-sm text-accent mt-1">TONNECT</p>
-      </div>
-
-      {/* Referral Stats */}
-      <div className="cyber-card rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Users className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold">Your Referrals</h2>
-        </div>
-        <div className="text-center py-4 bg-muted/50 rounded-xl">
-          <p className="text-5xl font-bold text-primary">{referralCount}</p>
-          <p className="text-sm text-muted-foreground mt-2">Friends Invited</p>
-        </div>
-      </div>
-
       {/* Hot Tasks */}
       <div className="space-y-3">
         <h3 className="text-lg font-bold flex items-center gap-2">

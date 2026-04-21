@@ -221,22 +221,33 @@ const Tasks = () => {
                   <Button disabled className="bg-primary/20">
                     Claimed
                   </Button>
+                ) : verifyingTasks.has(task.id) ? (
+                  <Button disabled className="bg-muted">
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Verifying
+                  </Button>
+                ) : startedTasks.has(task.id) ? (
+                  <Button
+                    onClick={() => claimReward(task.id, task.reward)}
+                    disabled={claimingTasks.has(task.id)}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {claimingTasks.has(task.id) ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Claiming
+                      </>
+                    ) : (
+                      "Claim"
+                    )}
+                  </Button>
                 ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => startActionTask(task.id, 'hot')}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Start
-                    </Button>
-                    <Button
-                      onClick={() => claimReward(task.id, task.reward)}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      Claim
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => startActionTask(task.id, 'hot')}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Start
+                  </Button>
                 )}
               </div>
             </div>

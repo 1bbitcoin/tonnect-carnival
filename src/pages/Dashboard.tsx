@@ -100,21 +100,6 @@ const Dashboard = () => {
           <p className="text-5xl font-bold glow-text">{Number(profile?.total_balance || 0).toLocaleString()}</p>
           <p className="text-lg text-muted-foreground mt-2">TONNECT</p>
         </div>
-
-        <div className="grid grid-cols-3 gap-2 text-center pt-4 border-t border-primary/20">
-          <div>
-            <p className="text-2xl font-bold text-primary">+0</p>
-            <p className="text-xs text-muted-foreground">Today</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-secondary">+0</p>
-            <p className="text-xs text-muted-foreground">This Week</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-accent">-</p>
-            <p className="text-xs text-muted-foreground">Rank</p>
-          </div>
-        </div>
       </div>
 
       {/* Quick Actions */}

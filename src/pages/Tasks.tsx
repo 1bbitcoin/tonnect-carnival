@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, CheckCircle2, Lock, Send, Twitter, Wallet, Mail } from "lucide-react";
+import { Users, CheckCircle2, Lock, Send, Twitter, Wallet, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
@@ -25,6 +25,9 @@ const Tasks = () => {
   const { profile, refetch } = useTelegram();
   const [referralCount, setReferralCount] = useState(0);
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+  const [startedTasks, setStartedTasks] = useState<Set<string>>(new Set());
+  const [verifyingTasks, setVerifyingTasks] = useState<Set<string>>(new Set());
+  const [claimingTasks, setClaimingTasks] = useState<Set<string>>(new Set());
   
   const [tasks] = useState<Task[]>([
     { id: "friend1", friends: 1, reward: 100, completed: false },
@@ -47,9 +50,22 @@ const Tasks = () => {
 
   useEffect(() => {
     if (!profile) return;
-    fetchReferralCount();
-    fetchCompletedTasks();
+    // Load started tasks from localStorage (per-user)
+    const key = `started_tasks_${profile.id}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        setStartedTasks(new Set(JSON.parse(stored)));
+      } catch {}
+    }
+    // Run both fetches in parallel for faster initial render
+    Promise.all([fetchReferralCount(), fetchCompletedTasks()]);
   }, [profile]);
+
+  const persistStarted = (next: Set<string>) => {
+    if (!profile?.id) return;
+    localStorage.setItem(`started_tasks_${profile.id}`, JSON.stringify(Array.from(next)));
+  };
 
   const fetchReferralCount = async () => {
     if (!profile?.id) return;
@@ -77,7 +93,8 @@ const Tasks = () => {
 
   const claimReward = async (taskId: string, reward: number) => {
     if (!profile?.telegram_id) return;
-
+    if (claimingTasks.has(taskId)) return;
+    setClaimingTasks((prev) => new Set([...prev, taskId]));
     try {
       const { data, error } = await supabase.functions.invoke('claim-task', {
         body: {
@@ -98,25 +115,47 @@ const Tasks = () => {
       }
     } catch (error) {
       toast.error('Failed to claim reward');
+    } finally {
+      setClaimingTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
     }
   };
 
   const startActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
     if (!profile) return;
     
-    // Open appropriate link for hot tasks
-    if (taskType === 'hot') {
-      if (taskId === 'hot_telegram') {
-        window.open('https://t.me/Tonnect_Real', '_blank');
-      } else if (taskId === 'hot_twitter') {
-        window.open('https://x.com/T0NNECT', '_blank');
-      } else if (taskId === 'hot_retweet') {
-        window.open('https://x.com/T0NNECT', '_blank');
-      }
-      toast.success("Task started! Complete it and come back to claim");
-    } else if (taskType === 'onchain') {
+    if (taskType === 'onchain') {
       toast.info("This feature is coming soon!");
+      return;
     }
+
+    // Open appropriate link for hot tasks
+    if (taskId === 'hot_telegram') {
+      window.open('https://t.me/Tonnect_Real', '_blank');
+    } else if (taskId === 'hot_twitter' || taskId === 'hot_retweet') {
+      window.open('https://x.com/T0NNECT', '_blank');
+    }
+
+    // Mark as verifying for a few seconds, then enable Claim
+    setVerifyingTasks((prev) => new Set([...prev, taskId]));
+    toast.success("Verifying... please complete the task");
+
+    setTimeout(() => {
+      setVerifyingTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+      setStartedTasks((prev) => {
+        const next = new Set([...prev, taskId]);
+        persistStarted(next);
+        return next;
+      });
+      toast.success("Task ready to claim!");
+    }, 5000);
   };
 
   return (

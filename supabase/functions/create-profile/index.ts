@@ -45,6 +45,8 @@ Deno.serve(async (req) => {
 
     // Create new profile
     const referralCode = `REF${telegram_user.id}`;
+    // If joining via referral, award 100 TONNECT welcome bonus to the new user
+    const welcomeBonus = referrer_telegram_id ? 100 : 0;
     const { data: newProfile, error: profileError } = await supabaseClient
       .from('profiles')
       .insert({
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
         first_name: telegram_user.first_name || null,
         last_name: telegram_user.last_name || null,
         referral_code: referralCode,
-        total_balance: 0,
+        total_balance: welcomeBonus,
         photo_url: telegram_user.photo_url || null
       })
       .select()

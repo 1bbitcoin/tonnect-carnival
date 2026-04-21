@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { telegram_id } = await req.json();
+    const { telegram_id, bypass_cooldown } = await req.json();
 
     if (!telegram_id) {
       return new Response(
@@ -40,33 +40,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check last spin time (24 hour cooldown)
-    const { data: lastSpin } = await supabaseClient
-      .from('user_spin_history')
-      .select('spin_time')
-      .eq('user_id', profile.id)
-      .order('spin_time', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     const now = new Date();
-    const SPIN_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in ms
 
-    if (lastSpin) {
-      const lastSpinTime = new Date(lastSpin.spin_time).getTime();
-      const timeSinceLastSpin = now.getTime() - lastSpinTime;
+    // Check last spin time (24 hour cooldown) — skip if bypass_cooldown (ad-earned spin)
+    if (!bypass_cooldown) {
+      const { data: lastSpin } = await supabaseClient
+        .from('user_spin_history')
+        .select('spin_time')
+        .eq('user_id', profile.id)
+        .order('spin_time', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (timeSinceLastSpin < SPIN_COOLDOWN) {
-        const remaining = SPIN_COOLDOWN - timeSinceLastSpin;
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'Spin cooldown active',
-            canSpin: false,
-            timeRemaining: Math.floor(remaining / 1000)
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      const SPIN_COOLDOWN = 24 * 60 * 60 * 1000;
+
+      if (lastSpin) {
+        const lastSpinTime = new Date(lastSpin.spin_time).getTime();
+        const timeSinceLastSpin = now.getTime() - lastSpinTime;
+
+        if (timeSinceLastSpin < SPIN_COOLDOWN) {
+          const remaining = SPIN_COOLDOWN - timeSinceLastSpin;
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Spin cooldown active',
+              canSpin: false,
+              timeRemaining: Math.floor(remaining / 1000)
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
     }
 

@@ -113,16 +113,6 @@ const Referral = () => {
               <p className="text-sm text-muted-foreground">Get 100 TONNECT when friend signs up</p>
             </div>
           </div>
-
-          <div className="flex items-start gap-3 p-3 bg-secondary/10 rounded-lg border border-secondary/30">
-            <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-lg font-bold">2</span>
-            </div>
-            <div>
-              <p className="font-semibold">Passive Income</p>
-              <p className="text-sm text-muted-foreground">Earn 5% from all their mining forever</p>
-            </div>
-          </div>
         </div>
       </div>
 

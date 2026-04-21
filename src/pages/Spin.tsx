@@ -1,11 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Gift, Sparkles, Zap, Trophy } from "lucide-react";
+import { Gift, Sparkles, Zap, Trophy, Play } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import tonnectIcon from "@/assets/new-tonnect-logo.png";
 import { useTelegram } from "@/contexts/TelegramContext";
 import { supabase } from "@/integrations/supabase/client";
+
+declare global {
+  interface Window {
+    show_10906902?: (opts?: any) => Promise<void>;
+  }
+}
+
+const MAX_ADS_PER_DAY = 20;
 
 const Spin = () => {
   const { profile, refetch } = useTelegram();
@@ -14,6 +22,42 @@ const Spin = () => {
   const [winnerLocked, setWinnerLocked] = useState(false);
   const [canSpin, setCanSpin] = useState(true);
   const [timeLeft, setTimeLeft] = useState("");
+  const [adSpinsAvailable, setAdSpinsAvailable] = useState(0);
+  const [adsWatchedToday, setAdsWatchedToday] = useState(0);
+  const [isWatchingAd, setIsWatchingAd] = useState(false);
+  const [bypassCooldown, setBypassCooldown] = useState(false);
+
+  const getAdStorageKey = () => {
+    if (!profile?.id) return null;
+    const today = new Date().toISOString().split("T")[0];
+    return `monetag_ads_${profile.id}_${today}`;
+  };
+
+  const loadAdState = () => {
+    const key = getAdStorageKey();
+    if (!key) return;
+    try {
+      const raw = localStorage.getItem(key);
+      const data = raw ? JSON.parse(raw) : { watched: 0, available: 0 };
+      setAdsWatchedToday(data.watched || 0);
+      setAdSpinsAvailable(data.available || 0);
+    } catch {
+      setAdsWatchedToday(0);
+      setAdSpinsAvailable(0);
+    }
+  };
+
+  const saveAdState = (watched: number, available: number) => {
+    const key = getAdStorageKey();
+    if (!key) return;
+    localStorage.setItem(key, JSON.stringify({ watched, available }));
+    setAdsWatchedToday(watched);
+    setAdSpinsAvailable(available);
+  };
+
+  useEffect(() => {
+    loadAdState();
+  }, [profile?.id]);
 
   const prizes = [
     { id: 0, value: 5,   label: "5" },
@@ -79,11 +123,14 @@ const Spin = () => {
   };
 
   const handleSpin = async () => {
-    if (isSpinning || !canSpin || !profile?.telegram_id) return;
+    if (isSpinning || !profile?.telegram_id) return;
+    const usingAdSpin = !canSpin && adSpinsAvailable > 0;
+    if (!canSpin && !usingAdSpin) return;
 
     setIsSpinning(true);
     setWinnerLocked(false);
     setSelectedPrize(null);
+    if (usingAdSpin) setBypassCooldown(true);
 
     let currentIndex = Math.floor(Math.random() * prizes.length);
     const animationInterval = setInterval(() => {
@@ -92,7 +139,7 @@ const Spin = () => {
     }, 90);
 
     const apiCall = supabase.functions.invoke("claim-spin", {
-      body: { telegram_id: profile.telegram_id },
+      body: { telegram_id: profile.telegram_id, bypass_cooldown: usingAdSpin },
     });
     const minDelay = new Promise((r) => setTimeout(r, 3000));
 
@@ -107,13 +154,19 @@ const Spin = () => {
         setSelectedPrize(winnerIndex >= 0 ? winnerIndex : 0);
         setWinnerLocked(true);
         setIsSpinning(false);
-        setCanSpin(false);
+        if (usingAdSpin) {
+          saveAdState(adsWatchedToday, adSpinsAvailable - 1);
+          setBypassCooldown(false);
+        } else {
+          setCanSpin(false);
+        }
         toast.success(data.message);
         fireConfetti();
         await refetch();
       } else {
         setIsSpinning(false);
         setSelectedPrize(null);
+        setBypassCooldown(false);
         toast.error(data?.message || "Cannot spin right now");
         if (data?.timeRemaining) {
           const h = Math.floor(data.timeRemaining / 3600);
@@ -127,9 +180,38 @@ const Spin = () => {
       clearInterval(animationInterval);
       setIsSpinning(false);
       setSelectedPrize(null);
+      setBypassCooldown(false);
       toast.error("Failed to complete spin. Please try again.");
     }
   };
+
+  const handleWatchAd = async () => {
+    if (isWatchingAd || isSpinning) return;
+    if (adsWatchedToday >= MAX_ADS_PER_DAY) {
+      toast.error("Daily ad limit reached (20/20). Come back tomorrow!");
+      return;
+    }
+    if (typeof window.show_10906902 !== "function") {
+      toast.error("Ad service not loaded. Please refresh.");
+      return;
+    }
+
+    setIsWatchingAd(true);
+    try {
+      await window.show_10906902();
+      const newWatched = adsWatchedToday + 1;
+      const newAvailable = adSpinsAvailable + 1;
+      saveAdState(newWatched, newAvailable);
+      toast.success("Free spin unlocked! 🎁");
+    } catch (err) {
+      console.error("Ad error:", err);
+      toast.error("Ad was not completed. Try again.");
+    } finally {
+      setIsWatchingAd(false);
+    }
+  };
+
+  const canDraw = canSpin || adSpinsAvailable > 0;
 
   return (
     <div className="space-y-6">
@@ -152,14 +234,12 @@ const Spin = () => {
           </p>
         </div>
         <div className="stat-pill p-3 text-center">
-          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Next Draw</p>
-          <p className="text-xl font-black text-foreground">{canSpin ? "Now!" : timeLeft.split(" ")[0]}</p>
+          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Free Spins</p>
+          <p className="text-xl font-black text-foreground">{adSpinsAvailable}</p>
         </div>
         <div className="stat-pill p-3 text-center">
-          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Max Prize</p>
-          <p className="text-xl font-black bg-gradient-to-r from-warning to-destructive bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-warm)" }}>
-            200
-          </p>
+          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Ads Today</p>
+          <p className="text-xl font-black text-foreground">{adsWatchedToday}/{MAX_ADS_PER_DAY}</p>
         </div>
       </div>
 
@@ -210,7 +290,7 @@ const Spin = () => {
       {/* Spin Button */}
       <button
         onClick={handleSpin}
-        disabled={isSpinning || !canSpin}
+        disabled={isSpinning || !canDraw}
         className="btn-3d w-full h-16 text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0"
       >
         {isSpinning ? (
@@ -223,12 +303,47 @@ const Spin = () => {
             <Gift className="w-6 h-6" />
             <span>Draw Now!</span>
           </>
+        ) : adSpinsAvailable > 0 ? (
+          <>
+            <Gift className="w-6 h-6" />
+            <span>Use Free Spin ({adSpinsAvailable})</span>
+          </>
         ) : (
           <>
             <Trophy className="w-6 h-6" />
             <span>Wait {timeLeft}</span>
           </>
         )}
+      </button>
+
+      {/* Watch Ad Button */}
+      <button
+        onClick={handleWatchAd}
+        disabled={isWatchingAd || isSpinning || adsWatchedToday >= MAX_ADS_PER_DAY}
+        className="cyber-card w-full p-4 flex items-center justify-between gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] transition-transform"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full gradient-primary flex items-center justify-center shrink-0">
+            {isWatchingAd ? (
+              <Zap className="w-5 h-5 text-white animate-pulse" />
+            ) : (
+              <Play className="w-5 h-5 text-white fill-white" />
+            )}
+          </div>
+          <div className="text-left">
+            <p className="font-black text-sm">
+              {isWatchingAd ? "Loading Ad..." : adsWatchedToday >= MAX_ADS_PER_DAY ? "Daily Limit Reached" : "Watch Ad for Free Spin"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {adsWatchedToday >= MAX_ADS_PER_DAY
+                ? "Come back tomorrow!"
+                : `1 ad = 1 spin · ${MAX_ADS_PER_DAY - adsWatchedToday} left today`}
+            </p>
+          </div>
+        </div>
+        <div className="px-3 py-1.5 rounded-full bg-secondary/20 border border-secondary/40">
+          <span className="text-xs font-bold text-secondary">+1 SPIN</span>
+        </div>
       </button>
 
       {/* How It Works */}
@@ -241,7 +356,7 @@ const Spin = () => {
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Draw once every 24 hours to win random TONNECT rewards from 5 to 200 tokens.
-          Higher prizes are rarer — the bigger the win, the louder the celebration!
+          Want more? Watch ads to earn extra free spins (max 20 per day)!
         </p>
       </div>
     </div>

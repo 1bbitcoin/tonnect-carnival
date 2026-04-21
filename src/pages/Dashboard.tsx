@@ -32,7 +32,18 @@ const Dashboard = () => {
   };
 
   const remainingSupply = totalSupply - claimedTokens;
-  const claimedPercentage = ((claimedTokens / totalSupply) * 100).toFixed(2);
+  const rawPercentage = (claimedTokens / totalSupply) * 100;
+  // Show enough precision for very small percentages (early stage)
+  const claimedPercentage =
+    rawPercentage === 0
+      ? "0"
+      : rawPercentage >= 1
+      ? rawPercentage.toFixed(2)
+      : rawPercentage >= 0.01
+      ? rawPercentage.toFixed(4)
+      : rawPercentage.toPrecision(2);
+  // Ensure progress bar is visible even for tiny percentages
+  const barWidth = rawPercentage > 0 ? Math.max(rawPercentage, 0.5) : 0;
 
   return (
     <div className="space-y-6">
@@ -68,7 +79,7 @@ const Dashboard = () => {
           <div className="relative h-4 bg-muted rounded-full overflow-hidden">
             <div
               className="absolute h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 animate-glow-pulse"
-              style={{ width: `${claimedPercentage}%` }}
+              style={{ width: `${barWidth}%` }}
             />
           </div>
 

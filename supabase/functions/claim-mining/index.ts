@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { telegram_id } = await req.json();
+    const { telegram_id, boost_count } = await req.json();
 
     if (!telegram_id) {
       return new Response(
@@ -49,8 +49,12 @@ Deno.serve(async (req) => {
 
     const now = Date.now();
     const MINING_DURATION = 4 * 60 * 60 * 1000; // 4 hours in ms
-    const MINING_RATE = 10; // 10 TONNECT per hour
-    const MAX_MINING = 40; // 40 TONNECT max per cycle
+    const BASE_RATE = 10; // 10 TONNECT per hour
+    const BOOST_PER_AD = 5; // +5/hr per ad watched
+    const MAX_BOOSTS = 5;
+    const safeBoost = Math.max(0, Math.min(MAX_BOOSTS, Number(boost_count) || 0));
+    const MINING_RATE = BASE_RATE + safeBoost * BOOST_PER_AD;
+    const MAX_MINING = MINING_RATE * 4; // 4 hours worth
 
     // No mining session yet — user must press Start
     if (!miningState) {
@@ -88,7 +92,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Calculate mining reward (capped at max)
+    // Calculate mining reward (capped at max for this boosted rate)
     const miningAmount = MAX_MINING;
     const newBalance = Number(profile.total_balance || 0) + miningAmount;
     const newTotalMined = Number(miningState.total_mined || 0) + miningAmount;

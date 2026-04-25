@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Zap, Clock, TrendingUp, Play } from "lucide-react";
 import { toast } from "sonner";
 import miningIcon from "@/assets/new-tonnect-logo.png";

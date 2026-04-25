@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Gift, Lock, Calendar, Coins } from "lucide-react";
 import { toast } from "sonner";
-import { getBalance } from "@/lib/balance";
+import { useTelegram } from "@/contexts/TelegramContext";
 
 const Rewards = () => {
-  const userBalance = getBalance();
+  const { profile } = useTelegram();
+  const userBalance = Number(profile?.total_balance || 0);
   const tgeDate = "Coming Soon";
   const minWithdrawal = 100;
 

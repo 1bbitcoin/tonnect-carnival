@@ -21,13 +21,10 @@ const Dashboard = () => {
   }, []);
 
   const fetchTotalClaimed = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('total_balance');
-    
-    if (data) {
-      const total = data.reduce((sum, profile) => sum + (Number(profile.total_balance) || 0), 0);
-      setClaimedTokens(total);
+    // Use a DB-side aggregate so we don't hit the 1000-row query cap
+    const { data, error } = await (supabase as any).rpc('get_total_claimed');
+    if (!error && data !== null && data !== undefined) {
+      setClaimedTokens(Number(data) || 0);
     }
   };
 

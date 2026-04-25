@@ -191,6 +191,7 @@ export type Database = {
     }
     Functions: {
       generate_referral_code: { Args: { telegram_id: number }; Returns: string }
+      get_total_claimed: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

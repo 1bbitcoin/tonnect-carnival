@@ -87,6 +87,61 @@ Deno.serve(async (req) => {
       }
     }
 
+    // For Telegram channel join task, verify membership via Bot API
+    if (task_id === 'hot_telegram') {
+      const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+      if (!botToken) {
+        console.error('TELEGRAM_BOT_TOKEN not configured');
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Verification service unavailable. Please try again later.'
+          }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const channelUsername = '@Tonnect_Real';
+      try {
+        const tgRes = await fetch(
+          `https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${encodeURIComponent(channelUsername)}&user_id=${telegram_id}`
+        );
+        const tgData = await tgRes.json();
+        console.log('getChatMember response:', JSON.stringify(tgData));
+
+        if (!tgData.ok) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Could not verify channel membership. Make sure you joined and try again.'
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const status = tgData.result?.status;
+        const validStatuses = ['member', 'administrator', 'creator'];
+        if (!validStatuses.includes(status)) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'You must join the Telegram channel first to claim this reward!'
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (err) {
+        console.error('Telegram verification error:', err);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Verification failed. Please try again.'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Update balance
     const newBalance = Number(profile.total_balance || 0) + Number(reward_amount);
     const { error: balanceError } = await supabaseClient

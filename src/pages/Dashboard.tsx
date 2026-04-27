@@ -111,26 +111,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <a
-          href="/mining"
-          className="cyber-card rounded-xl p-4 text-center hover:scale-105 transition-transform"
-        >
-          <div className="text-5xl mb-2 animate-float">⛏️</div>
-          <p className="font-bold">Start Mining</p>
-        </a>
-        <a
-          href="/spin"
-          className="cyber-card rounded-xl p-4 text-center hover:scale-105 transition-transform"
-        >
-          <div className="text-5xl mb-2 animate-float">🎰</div>
-          <p className="font-bold">Spin Now</p>
-        </a>
-      </div>
-
-      {/* Tasks and Store */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Store */}
+      <div className="grid grid-cols-1 gap-4">
         <div className="cyber-card rounded-xl p-4 text-center opacity-75">
           <div className="text-5xl mb-2 animate-float">🏪</div>
           <p className="font-bold">Store</p>

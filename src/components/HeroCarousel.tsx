@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import tonnectLogo from "@/assets/new-tonnect-logo.png";
+import tonnect2026 from "@/assets/tonnect-2026.png";
 
 interface Slide {
   id: string;
@@ -25,19 +26,17 @@ const slides: Slide[] = [
       </div>
     ),
   },
-  // Slide kedua — placeholder, akan diganti saat user kirim gambar
   {
-    id: "placeholder-2",
-    bg: "bg-gradient-to-br from-[hsl(200,100%,95%)] via-[hsl(220,100%,94%)] to-[hsl(190,90%,92%)]",
+    id: "tonnect-2026",
+    // Background menyesuaikan warna gambar (biru terang)
+    bg: "bg-gradient-to-br from-[hsl(210,100%,60%)] via-[hsl(205,95%,55%)] to-[hsl(215,90%,50%)]",
     content: (
-      <div className="text-center space-y-3 py-6">
-        <div className="flex justify-center">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent animate-glow-pulse flex items-center justify-center text-4xl">
-            ✨
-          </div>
-        </div>
-        <h1 className="text-4xl font-bold glow-text">Coming Soon</h1>
-        <p className="text-lg text-accent">Stay Tuned</p>
+      <div className="w-full">
+        <img
+          src={tonnect2026}
+          alt="TONNECT 2026 - Connecting Everyone To Crypto"
+          className="w-full h-full object-cover"
+        />
       </div>
     ),
   },

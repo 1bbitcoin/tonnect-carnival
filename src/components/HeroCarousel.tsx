@@ -11,18 +11,32 @@ interface Slide {
 const slides: Slide[] = [
   {
     id: "tonnect",
-    bg: "bg-gradient-to-br from-[hsl(220,100%,97%)] via-[hsl(230,100%,96%)] to-[hsl(260,80%,95%)]",
+    bg: "bg-gradient-to-br from-[hsl(210,100%,62%)] via-[hsl(205,95%,55%)] to-[hsl(215,90%,48%)]",
     content: (
-      <div className="text-center space-y-3 py-6">
-        <div className="flex justify-center">
-          <img
-            src={tonnectLogo}
-            alt="TONNECT Logo"
-            className="w-24 h-24 rounded-full animate-glow-pulse"
-          />
+      <div className="relative w-full text-center py-10 px-6 overflow-hidden">
+        {/* subtle network lines accent */}
+        <div className="pointer-events-none absolute -top-6 -right-6 w-32 h-32 rounded-full border border-white/20" />
+        <div className="pointer-events-none absolute -top-2 -right-2 w-20 h-20 rounded-full border border-white/15" />
+
+        <h1
+          style={{ fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.08em" }}
+          className="text-5xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+        >
+          TONNECT
+        </h1>
+        <p
+          style={{ fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.15em" }}
+          className="mt-2 text-base font-semibold text-white/95 uppercase"
+        >
+          Mining Carnival
+        </p>
+
+        <div className="mt-4 inline-flex items-center gap-2 bg-white rounded-full px-4 py-1.5 shadow-lg">
+          <img src={tonnectLogo} alt="TONNECT" className="w-5 h-5 rounded-full" />
+          <span className="text-xs font-bold text-[hsl(210,90%,50%)]">TON</span>
+          <span className="text-[hsl(210,40%,70%)]">|</span>
+          <span className="text-xs font-bold text-[hsl(210,90%,50%)]">Telegram</span>
         </div>
-        <h1 className="text-4xl font-bold glow-text">TONNECT</h1>
-        <p className="text-lg text-accent">Mining Carnival</p>
       </div>
     ),
   },

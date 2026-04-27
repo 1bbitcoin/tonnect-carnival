@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Coins, TrendingUp } from "lucide-react";
-import tonnectLogo from "@/assets/new-tonnect-logo.png";
 import { useTelegram } from "@/contexts/TelegramContext";
 import { supabase } from "@/integrations/supabase/client";
 import TasksSection from "@/components/TasksSection";
+import HeroCarousel from "@/components/HeroCarousel";
 
 const Dashboard = () => {
   const { profile } = useTelegram();
@@ -45,18 +45,8 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Logo */}
-      <div className="text-center space-y-4">
-        <div className="flex justify-center">
-          <img
-            src={tonnectLogo}
-            alt="TONNECT Logo"
-            className="w-24 h-24 rounded-full animate-glow-pulse"
-          />
-        </div>
-        <h1 className="text-4xl font-bold glow-text">TONNECT</h1>
-        <p className="text-lg text-accent">Mining Carnival</p>
-      </div>
+      {/* Hero auto-sliding carousel */}
+      <HeroCarousel />
 
       {/* Total Supply Card */}
       <div className="cyber-card rounded-2xl p-6 space-y-4">

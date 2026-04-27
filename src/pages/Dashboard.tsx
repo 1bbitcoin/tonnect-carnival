@@ -3,6 +3,7 @@ import { Coins, TrendingUp } from "lucide-react";
 import tonnectLogo from "@/assets/new-tonnect-logo.png";
 import { useTelegram } from "@/contexts/TelegramContext";
 import { supabase } from "@/integrations/supabase/client";
+import TasksSection from "@/components/TasksSection";
 
 const Dashboard = () => {
   const { profile } = useTelegram();
@@ -130,19 +131,15 @@ const Dashboard = () => {
 
       {/* Tasks and Store */}
       <div className="grid grid-cols-2 gap-4">
-        <a
-          href="/tasks"
-          className="cyber-card rounded-xl p-4 text-center hover:scale-105 transition-transform"
-        >
-          <div className="text-5xl mb-2 animate-float">📋</div>
-          <p className="font-bold">Tasks</p>
-        </a>
         <div className="cyber-card rounded-xl p-4 text-center opacity-75">
           <div className="text-5xl mb-2 animate-float">🏪</div>
           <p className="font-bold">Store</p>
           <p className="text-xs text-muted-foreground mt-1">Coming Soon</p>
         </div>
       </div>
+
+      {/* Tasks Section (moved from /tasks page) */}
+      <TasksSection />
     </div>
   );
 };

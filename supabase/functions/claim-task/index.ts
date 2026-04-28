@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     // Validate reward amount (prevent client manipulation)
-    const validRewards = [100, 150, 200, 250, 300, 350, 400, 500];
+    const validRewards = [100, 150, 200, 250, 300, 350, 400, 500, 5000, 10000];
     if (!validRewards.includes(Number(reward_amount))) {
       return new Response(
         JSON.stringify({ error: 'Invalid reward amount' }),

@@ -1,13 +1,31 @@
 import { Button } from "@/components/ui/button";
-import { Gift, Lock, Calendar, Coins } from "lucide-react";
+import { Gift, Lock, Calendar, Coins, CheckCircle2, Hourglass } from "lucide-react";
 import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Rewards = () => {
   const { profile } = useTelegram();
   const userBalance = Number(profile?.total_balance || 0);
   const tgeDate = "Coming Soon";
   const minWithdrawal = 100;
+  const [claimedTotal, setClaimedTotal] = useState(0);
+
+  useEffect(() => {
+    const fetchClaimed = async () => {
+      if (!profile?.id) return;
+      const { data } = await supabase
+        .from('user_task_completions')
+        .select('reward_amount')
+        .eq('user_id', profile.id);
+      const sum = (data || []).reduce((acc, r: any) => acc + Number(r.reward_amount || 0), 0);
+      setClaimedTotal(sum);
+    };
+    fetchClaimed();
+  }, [profile?.id, userBalance]);
+
+  const remaining = userBalance; // locked until TGE
 
   const handleWithdraw = () => {
     toast.info("TGE (Token Generation Event) has not occurred yet. Withdrawals will be available after TGE!");
@@ -30,6 +48,26 @@ const Rewards = () => {
           <p className="text-sm text-muted-foreground mb-2">Available Balance</p>
           <p className="text-5xl font-bold glow-text mb-2">{userBalance.toLocaleString()}</p>
           <p className="text-lg text-muted-foreground">TONNECT</p>
+        </div>
+      </div>
+
+      {/* Claimed & Remaining Summary */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="cyber-card rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+            <p className="text-xs text-muted-foreground">Total Claimed</p>
+          </div>
+          <p className="text-xl font-bold glow-text">{claimedTotal.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">TONNECT (tasks)</p>
+        </div>
+        <div className="cyber-card rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Hourglass className="w-4 h-4 text-secondary" />
+            <p className="text-xs text-muted-foreground">Remaining (Locked)</p>
+          </div>
+          <p className="text-xl font-bold glow-text">{remaining.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Unlock at TGE</p>
         </div>
       </div>
 

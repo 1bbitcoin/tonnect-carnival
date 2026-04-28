@@ -185,6 +185,27 @@ export type Database = {
           },
         ]
       }
+      user_task_progress: {
+        Row: {
+          id: string
+          started_at: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          started_at?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          started_at?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

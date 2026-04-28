@@ -50,20 +50,8 @@ const TasksSection = () => {
 
   useEffect(() => {
     if (!profile) return;
-    const key = `started_tasks_${profile.id}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      try {
-        setStartedTasks(new Set(JSON.parse(stored)));
-      } catch {}
-    }
-    Promise.all([fetchReferralCount(), fetchCompletedTasks()]);
+    Promise.all([fetchReferralCount(), fetchCompletedTasks(), fetchStartedTasks()]);
   }, [profile]);
-
-  const persistStarted = (next: Set<string>) => {
-    if (!profile?.id) return;
-    localStorage.setItem(`started_tasks_${profile.id}`, JSON.stringify(Array.from(next)));
-  };
 
   const fetchReferralCount = async () => {
     if (!profile?.id) return;
@@ -72,6 +60,15 @@ const TasksSection = () => {
       .select('*', { count: 'exact', head: true })
       .eq('referrer_id', profile.id);
     setReferralCount(count || 0);
+  };
+
+  const fetchStartedTasks = async () => {
+    if (!profile?.id) return;
+    const { data } = await supabase
+      .from('user_task_progress')
+      .select('task_id')
+      .eq('user_id', profile.id);
+    if (data) setStartedTasks(new Set(data.map((t) => t.task_id)));
   };
 
   const fetchCompletedTasks = async () => {
@@ -116,32 +113,47 @@ const TasksSection = () => {
     }
   };
 
-  const startActionTask = (taskId: string, taskType: 'hot' | 'onchain') => {
+  const startActionTask = async (taskId: string, taskType: 'hot' | 'onchain') => {
     if (!profile) return;
     if (taskType === 'onchain') {
       toast.info("This feature is coming soon!");
       return;
     }
+    if (!profile.telegram_id) return;
+
     if (taskId === 'hot_telegram') {
       window.open('https://t.me/Tonnect_Real', '_blank');
     } else if (taskId === 'hot_twitter' || taskId === 'hot_retweet') {
       window.open('https://x.com/T0NNECT', '_blank');
     }
+
     setVerifyingTasks((prev) => new Set([...prev, taskId]));
     toast.success("Verifying... please complete the task");
-    setTimeout(() => {
+
+    try {
+      const { error } = await supabase.functions.invoke('start-task', {
+        body: { telegram_id: profile.telegram_id, task_id: taskId },
+      });
+      if (error) throw error;
+
+      // Wait so the user actually performs the action before claim is unlocked
+      setTimeout(() => {
+        setVerifyingTasks((prev) => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
+        setStartedTasks((prev) => new Set([...prev, taskId]));
+        toast.success("Task ready to claim!");
+      }, 10_000);
+    } catch {
       setVerifyingTasks((prev) => {
         const next = new Set(prev);
         next.delete(taskId);
         return next;
       });
-      setStartedTasks((prev) => {
-        const next = new Set([...prev, taskId]);
-        persistStarted(next);
-        return next;
-      });
-      toast.success("Task ready to claim!");
-    }, 5000);
+      toast.error("Failed to start task. Please try again.");
+    }
   };
 
   return (

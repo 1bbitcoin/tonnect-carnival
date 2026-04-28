@@ -142,6 +142,33 @@ Deno.serve(async (req) => {
       }
     }
 
+    // For other hot tasks (Twitter follow / retweet), require user to have pressed Start
+    // and waited at least 10 seconds (server-side anti-bypass).
+    const HOT_TASKS_REQUIRING_START = ['hot_twitter', 'hot_retweet'];
+    if (HOT_TASKS_REQUIRING_START.includes(task_id)) {
+      const { data: progress } = await supabaseClient
+        .from('user_task_progress')
+        .select('started_at')
+        .eq('user_id', profile.id)
+        .eq('task_id', task_id)
+        .maybeSingle();
+
+      if (!progress) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Please press Start and complete the task first.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const elapsedMs = Date.now() - new Date(progress.started_at).getTime();
+      if (elapsedMs < 10_000) {
+        return new Response(
+          JSON.stringify({ success: false, message: 'Please complete the task before claiming.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Update balance
     const newBalance = Number(profile.total_balance || 0) + Number(reward_amount);
     const { error: balanceError } = await supabaseClient

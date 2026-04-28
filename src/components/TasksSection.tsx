@@ -31,10 +31,10 @@ const TasksSection = () => {
 
   const [tasks] = useState<Task[]>([
     { id: "friend1", friends: 1, reward: 100, completed: false },
-    { id: "friend5", friends: 5, reward: 300, completed: false },
-    { id: "friend10", friends: 10, reward: 500, completed: false },
-    { id: "friend50", friends: 50, reward: 1200, completed: false },
-    { id: "friend100", friends: 100, reward: 2500, completed: false },
+    { id: "friend3", friends: 3, reward: 300, completed: false },
+    { id: "friend5", friends: 5, reward: 500, completed: false },
+    { id: "friend50", friends: 50, reward: 5000, completed: false },
+    { id: "friend100", friends: 100, reward: 10000, completed: false },
   ]);
 
   const [hotTasks] = useState<ActionTask[]>([

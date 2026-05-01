@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications_log: {
+        Row: {
+          id: string
+          notif_type: string
+          ref_key: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notif_type: string
+          ref_key: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notif_type?: string
+          ref_key?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

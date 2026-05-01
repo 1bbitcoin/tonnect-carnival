@@ -5,6 +5,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function notifyReferrer(
+  botToken: string,
+  referrerTelegramId: number,
+  newUserName: string,
+) {
+  try {
+    const text =
+      `🎉 <b>New referral joined!</b>\n\n` +
+      `${newUserName} just joined TONNECT using your invite link.\n\n` +
+      `💎 +100 TONNECT has been added to your balance.\n` +
+      `Keep inviting to unlock bigger rewards!`;
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: referrerTelegramId,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
+  } catch (e) {
+    console.warn('notifyReferrer failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -100,6 +126,20 @@ Deno.serve(async (req) => {
               .eq('id', referrerProfile.id);
 
             console.log(`Referral bonus awarded: +100 TONNECT to user ${referrer_telegram_id}`);
+
+            // Send Telegram notification to referrer (best-effort)
+            const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+            if (botToken) {
+              const newUserName =
+                telegram_user.first_name ||
+                telegram_user.username ||
+                'A new friend';
+              await notifyReferrer(
+                botToken,
+                Number(referrerProfile.telegram_id),
+                newUserName,
+              );
+            }
           }
         }
       } catch (referralError) {

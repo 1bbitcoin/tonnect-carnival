@@ -4,13 +4,15 @@ import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Rewards = () => {
-  const { profile } = useTelegram();
+  const { profile, isLoading } = useTelegram();
   const userBalance = Number(profile?.total_balance || 0);
   const tgeDate = "Coming Soon";
   const minWithdrawal = 100;
   const [claimedTotal, setClaimedTotal] = useState(0);
+  const [claimedLoaded, setClaimedLoaded] = useState(false);
 
   useEffect(() => {
     const fetchClaimed = async () => {
@@ -21,9 +23,12 @@ const Rewards = () => {
         .eq('user_id', profile.id);
       const sum = (data || []).reduce((acc, r: any) => acc + Number(r.reward_amount || 0), 0);
       setClaimedTotal(sum);
+      setClaimedLoaded(true);
     };
     fetchClaimed();
   }, [profile?.id, userBalance]);
+
+  const balanceLoading = isLoading || !profile;
 
   const remaining = userBalance; // locked until TGE
 
@@ -44,10 +49,19 @@ const Rewards = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 mb-4 animate-glow-pulse">
             <Coins className="w-10 h-10 text-primary" />
           </div>
-          
+
           <p className="text-sm text-muted-foreground mb-2">Available Balance</p>
-          <p className="text-5xl font-bold glow-text mb-2">{userBalance.toLocaleString()}</p>
-          <p className="text-lg text-muted-foreground">TONNECT</p>
+          {balanceLoading ? (
+            <div className="flex flex-col items-center gap-3">
+              <Skeleton className="h-12 w-44" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          ) : (
+            <>
+              <p className="text-5xl font-bold glow-text mb-2">{userBalance.toLocaleString()}</p>
+              <p className="text-lg text-muted-foreground">TONNECT</p>
+            </>
+          )}
         </div>
       </div>
 
@@ -58,7 +72,11 @@ const Rewards = () => {
             <CheckCircle2 className="w-4 h-4 text-primary" />
             <p className="text-xs text-muted-foreground">Total Claimed</p>
           </div>
-          <p className="text-xl font-bold glow-text">{claimedTotal.toLocaleString()}</p>
+          {claimedLoaded ? (
+            <p className="text-xl font-bold glow-text">{claimedTotal.toLocaleString()}</p>
+          ) : (
+            <Skeleton className="h-7 w-20" />
+          )}
           <p className="text-xs text-muted-foreground">TONNECT (tasks)</p>
         </div>
         <div className="cyber-card rounded-xl p-4">
@@ -66,7 +84,11 @@ const Rewards = () => {
             <Hourglass className="w-4 h-4 text-secondary" />
             <p className="text-xs text-muted-foreground">Remaining (Locked)</p>
           </div>
-          <p className="text-xl font-bold glow-text">{remaining.toLocaleString()}</p>
+          {balanceLoading ? (
+            <Skeleton className="h-7 w-20" />
+          ) : (
+            <p className="text-xl font-bold glow-text">{remaining.toLocaleString()}</p>
+          )}
           <p className="text-xs text-muted-foreground">Unlock at TGE</p>
         </div>
       </div>

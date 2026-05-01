@@ -2,6 +2,7 @@ import { Trophy, Medal, Crown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelegram } from "@/contexts/TelegramContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface LeaderboardUser {
   rank: number;
@@ -72,8 +73,61 @@ const Leaderboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Loading leaderboard...</p>
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold glow-text">Leaderboard</h1>
+          <p className="text-muted-foreground">Top TONNECT miners</p>
+        </div>
+
+        {/* Your Rank skeleton */}
+        <div className="cyber-card rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-9 w-16" />
+            </div>
+            <div className="space-y-2 items-end flex flex-col">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-24" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+          </div>
+        </div>
+
+        {/* Top podium skeleton */}
+        <div className="cyber-card rounded-2xl p-6">
+          <Skeleton className="h-5 w-32 mb-4" />
+          <div className="grid grid-cols-3 gap-2">
+            {[16, 20, 16].map((size, i) => (
+              <div key={i} className="text-center space-y-2">
+                <Skeleton className={`mx-auto rounded-full`} style={{ width: size * 4, height: size * 4 }} />
+                <Skeleton className="h-3 w-10 mx-auto" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+                <Skeleton className="h-3 w-12 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* List skeleton */}
+        <div className="cyber-card rounded-2xl p-6 space-y-2">
+          <Skeleton className="h-5 w-32 mb-4" />
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-muted/40">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-8 h-8 rounded" />
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-1 items-end flex flex-col">
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

@@ -51,12 +51,12 @@ Deno.serve(async (req) => {
 
   const cutoffIso = new Date(Date.now() - MINING_DURATION_MS).toISOString();
 
-  // All users whose mining cycle has completed but haven't claimed yet
+  // All mining sessions that have already completed (>=4h ago) and not yet claimed.
   const { data: states, error } = await supabase
     .from('user_mining_state')
-    .select('user_id, mining_start_time, profiles:profiles!inner(telegram_id, first_name)')
-    // @ts-ignore - PostgREST inner join via FK is not declared, so fetch all & filter in code
-    ;
+    .select('user_id, mining_start_time')
+    .lte('mining_start_time', cutoffIso)
+    .limit(1000);
 
   if (error) {
     console.error('Failed to load mining states:', error);
@@ -66,17 +66,23 @@ Deno.serve(async (req) => {
     });
   }
 
+  const userIds = (states ?? []).map((s) => s.user_id);
+  const profileMap = new Map<string, { telegram_id: number; first_name: string | null }>();
+  if (userIds.length > 0) {
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id, telegram_id, first_name')
+      .in('id', userIds);
+    for (const p of profs ?? []) {
+      profileMap.set(p.id, { telegram_id: Number(p.telegram_id), first_name: p.first_name });
+    }
+  }
+
   let sent = 0;
   let skipped = 0;
 
   for (const row of states ?? []) {
-    const startTime = new Date(row.mining_start_time).getTime();
-    if (Date.now() - startTime < MINING_DURATION_MS) {
-      skipped++;
-      continue;
-    }
-
-    const profile: any = (row as any).profiles;
+    const profile = profileMap.get(row.user_id);
     const telegramId = profile?.telegram_id;
     if (!telegramId) {
       skipped++;

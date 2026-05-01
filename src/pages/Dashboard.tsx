@@ -4,11 +4,13 @@ import { useTelegram } from "@/contexts/TelegramContext";
 import { supabase } from "@/integrations/supabase/client";
 import TasksSection from "@/components/TasksSection";
 import HeroCarousel from "@/components/HeroCarousel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
-  const { profile } = useTelegram();
+  const { profile, isLoading } = useTelegram();
   const [totalSupply] = useState(10000000000); // 10 Billion
   const [claimedTokens, setClaimedTokens] = useState(0);
+  const [supplyLoaded, setSupplyLoaded] = useState(false);
 
   useEffect(() => {
     fetchTotalClaimed();
@@ -26,6 +28,7 @@ const Dashboard = () => {
     const { data, error } = await (supabase as any).rpc('get_total_claimed');
     if (!error && data !== null && data !== undefined) {
       setClaimedTokens(Number(data) || 0);
+      setSupplyLoaded(true);
     }
   };
 
@@ -58,34 +61,54 @@ const Dashboard = () => {
           <span className="text-sm text-muted-foreground">Live</span>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Claimed</span>
-            <span className="text-primary font-bold">{claimedPercentage}%</span>
+        {!supplyLoaded ? (
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <Skeleton className="h-4 w-full rounded-full" />
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+            </div>
           </div>
-          
-          <div className="relative h-4 bg-muted rounded-full overflow-hidden">
-            <div
-              className="absolute h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 animate-glow-pulse"
-              style={{ width: `${barWidth}%` }}
-            />
-          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Claimed</span>
+              <span className="text-primary font-bold">{claimedPercentage}%</span>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <div>
-              <p className="text-xs text-muted-foreground">Claimed</p>
-              <p className="text-lg font-bold text-primary">
-                {claimedTokens.toLocaleString()}
-              </p>
+            <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+              <div
+                className="absolute h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 animate-glow-pulse"
+                style={{ width: `${barWidth}%` }}
+              />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Remaining</p>
-              <p className="text-lg font-bold text-secondary">
-                {remainingSupply.toLocaleString()}
-              </p>
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Claimed</p>
+                <p className="text-lg font-bold text-primary">
+                  {claimedTokens.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Remaining</p>
+                <p className="text-lg font-bold text-secondary">
+                  {remainingSupply.toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* User Balance Card */}
@@ -94,10 +117,19 @@ const Dashboard = () => {
           <TrendingUp className="w-6 h-6 text-accent" />
           Your Balance
         </h2>
-        
+
         <div className="text-center py-4">
-          <p className="text-5xl font-bold glow-text">{Number(profile?.total_balance || 0).toLocaleString()}</p>
-          <p className="text-lg text-muted-foreground mt-2">TONNECT</p>
+          {isLoading || !profile ? (
+            <div className="flex flex-col items-center gap-3">
+              <Skeleton className="h-12 w-40" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          ) : (
+            <>
+              <p className="text-5xl font-bold glow-text">{Number(profile?.total_balance || 0).toLocaleString()}</p>
+              <p className="text-lg text-muted-foreground mt-2">TONNECT</p>
+            </>
+          )}
         </div>
       </div>
 

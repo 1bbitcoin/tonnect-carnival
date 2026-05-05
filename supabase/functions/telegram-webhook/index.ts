@@ -57,6 +57,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    // GET = setup helper to (re)register the webhook with Telegram.
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      if (url.searchParams.get('setup') === '1') {
+        const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-webhook`;
+        const r = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: webhookUrl,
+            allowed_updates: ['message'],
+            drop_pending_updates: true,
+          }),
+        });
+        const data = await r.json();
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response('ok', { headers: corsHeaders });
+    }
+
     const update = await req.json();
     const message = update?.message;
     const text: string | undefined = message?.text;

@@ -5,7 +5,7 @@ const corsHeaders = {
 
 const WELCOME_IMAGE_URL =
   'https://gpeqjvaclmkwfymtruwj.supabase.co/storage/v1/object/public/telegram-assets/tonnect-2026.png';
-const MINI_APP_URL = 'https://tonnect-carnival.lovable.app';
+const MINI_APP_URL = 'https://mining-tonnect.vercel.app/';
 const COMMUNITY_URL = 'https://t.me/Tonnect_Real';
 
 const WELCOME_CAPTION =
